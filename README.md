@@ -11,3 +11,8 @@ can be invoked via IEX:
 > iex -S mix
 iex> Aoc.Day01.problem01()
 ```
+
+## Completeness
+
+ * Day 01 - ⭐️⭐️
+ * Day 02 - 
