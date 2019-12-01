@@ -1,21 +1,13 @@
-# Aoc2019
+# AoC2019
 
-**TODO: Add description**
+Working through [Advent of Code 2019](https://adventofcode.com/2019) in Elixir.
 
-## Installation
+## Running
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `aoc2019` to your list of dependencies in `mix.exs`:
+Each day is broken into a separate module in [`lib`](lib/), and each problem for each day 
+can be invoked via IEX:
 
-```elixir
-def deps do
-  [
-    {:aoc2019, "~> 0.1.0"}
-  ]
-end
+```bash
+> iex -S mix
+iex> Aoc.Day01.problem01()
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/aoc2019](https://hexdocs.pm/aoc2019).
-
