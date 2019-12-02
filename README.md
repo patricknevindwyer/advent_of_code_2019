@@ -15,4 +15,4 @@ iex> Aoc.Day01.problem01()
 ## Completeness
 
  * [Day 01](lib/aoc/day01.ex) - ⭐️⭐️
- * Day 02 - 
+ * [Day 02](lib/aoc/day02.ex) - ⭐️⭐️
