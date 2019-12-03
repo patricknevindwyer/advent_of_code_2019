@@ -16,3 +16,4 @@ iex> Aoc.Day01.problem01()
 
  * [Day 01](lib/aoc/day01.ex) - ⭐️⭐️
  * [Day 02](lib/aoc/day02.ex) - ⭐️⭐️
+ * [Day 03](lib/aoc/day03.ex) - ⭐️⭐️
