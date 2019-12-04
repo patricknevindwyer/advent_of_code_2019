@@ -12,8 +12,11 @@ can be invoked via IEX:
 iex> Aoc.Day01.problem01()
 ```
 
+Starting with the Day 3 problems, tests are included, which can be run with `mix test`.
+
 ## Completeness
 
  * [Day 01](lib/aoc/day01.ex) - ⭐️⭐️
  * [Day 02](lib/aoc/day02.ex) - ⭐️⭐️
  * [Day 03](lib/aoc/day03.ex) - ⭐️⭐️
+ * [Day 04](lib/aoc/day04.ex) - ⭐️⭐️
