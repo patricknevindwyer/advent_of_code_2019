@@ -20,3 +20,4 @@ Starting with the Day 3 problems, tests are included, which can be run with `mix
  * [Day 02](lib/aoc/day02.ex) - ⭐️⭐️
  * [Day 03](lib/aoc/day03.ex) - ⭐️⭐️
  * [Day 04](lib/aoc/day04.ex) - ⭐️⭐️
+ * [Day 05](lib/aoc/day05.ex) - ⭐️⭐️
