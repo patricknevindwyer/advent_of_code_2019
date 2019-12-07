@@ -297,3 +297,64 @@ def problem02() do
    eval_program(program, 0, [input_function: fn -> 5 end]) 
 end
 ```
+
+## Day 06
+
+**Problem**: [Universal Orbit Map](https://adventofcode.com/2019/day/6)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day06.ex](lib/aoc/day06.ex)
+
+**Tests**: [day06_test.exs](test/aoc/day06_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Map, Tree, String Parsing
+
+Lots of things orbiting each other, and we need to see if it all makes sense. It all starts with an orbital catalog,
+as list (or file) of which bodies orbit each other. Every entry in the catalog is of the form `AAA)BBB`, which means
+that object `BBB` orbits object `AAA`. If we parse all of the entries, we'll build up a tree of orbits, all centered
+on the Center of Mass (`COM`). Should we approach this as a tree problem? Nah - in my experience, we can solve it quicker
+by using maps. Each entry in our map (dictionary, hash, whatever) has a key of an orbital body, with the value being
+what this body orbits (so in our example our simple map would be `%{"BBB" => "AAA"}`).
+
+The core part of the solutions for problems one _and_ two is building this map of orbits:
+
+```elixir
+orbits = "data/day06/orbits.txt"
+|> File.read!()
+|> String.split("\n")
+
+catalog = orbits
+|> build_orbit_map()
+```
+
+The remainder of problem one is fairly straight forward - calcuate the the number of objects each body in the catalog
+is orbiting (an _orbital checksum_), and sum the total for the catalog:
+
+```elixir
+catalog
+|> Map.keys()
+|> Enum.map(
+   fn body ->
+       orbit_checksum(catalog, body)
+   end
+) 
+|> Enum.sum()
+```
+
+Problem two is interesting - orbital transfers is finding the path through the orbit catalog between two objects. This is
+_distinctly_ a tree problem. We could venture down the rabbit hole of [spanning trees](https://en.wikipedia.org/wiki/Spanning_tree)
+looking for different optimal algorithms, but we know that our orbital catalog has no cycles, and is otherwise a simple
+directed graph - so [we're going to cheat](https://github.com/patricknevindwyer/advent_of_code_2019/blob/master/lib/aoc/day06.ex#L129). Given two bodies (`YOU` and `SAN` in the problem definition), we find the path
+between each of the two and the Center of Mass (`COM`). This will be a list of bodies for each, the objects each orbits
+all the way down to the Center of Mass. Given list A, we can determine where each body exists (if it exists) in list B. The entry
+in both A and B with the smallest index is the _intercept_ between the two paths. The number of orbital transfers to
+get between A and B is the sum of the offset of the _intercept_ in the orbit lists for A and B. Finding the answer for
+problem two consists of finding the number of orbital transfers between where `YOU` are and where `SAN` is in the galaxy:
+
+```elixir
+body_a = catalog |> Map.get("YOU")
+body_b = catalog |> Map.get("SAN")
+
+catalog |> min_transfers(body_a, body_b)
+```
