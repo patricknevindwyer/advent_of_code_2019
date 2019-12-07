@@ -328,6 +328,10 @@ catalog = orbits
 |> build_orbit_map()
 ```
 
+With this map of orbits, we can easily find individual objects in the catalog, and using recursion we can map any
+object to it's orbits all the way to the Center of Mass (`COM`). Effectively we're encoding a tree as a map or as
+an [adjacency list](https://en.wikipedia.org/wiki/Adjacency_list).
+
 The remainder of problem one is fairly straight forward - calcuate the the number of objects each body in the catalog
 is orbiting (an _orbital checksum_), and sum the total for the catalog:
 
