@@ -31,7 +31,7 @@ Starting with the Day 3 problems, tests are included, which can be run with `mix
 
 **Stars**: ⭐️⭐️
 
-**Code**: [lib/aoc/day01.ex]
+**Code**: [day01.ex](lib/aoc/day01.ex)
 
 **Tests**: -
 
@@ -73,7 +73,7 @@ module_masses
 
 **Stars**: ⭐️⭐️
 
-**Code**: [lib/aoc/day02.ex]
+**Code**: [day02.ex](lib/aoc/day02.ex)
 
 **Tests**: -
 
@@ -96,7 +96,7 @@ return.
 Solving problem one, once we have a working virtual machine, is easy - just run the program through the VM:
 
 ```elixir
-eval_program(program) 
+program |> eval_program() 
 ```
 
 For problem two, things are a bit more involved - we need to run our program through the Intcode VM multiple times,
