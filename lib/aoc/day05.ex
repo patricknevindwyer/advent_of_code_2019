@@ -138,6 +138,7 @@ defmodule Aoc.Day05 do
        case decode_instruction(Enum.at(program, offset)) do
           
           {:halt} -> 
+
               {:halt, program}
           
           {:add, l_addr_mode, r_addr_mode, :position} -> 
