@@ -226,3 +226,74 @@ Now a solution to problem two looks almost exactly like a solution to problem on
 candidate_passwords(124075, 580769, [&adjacent_digits?/1, &always_increasing?/1, &exactly_two_adjacent_digits?/1])
 |> length()
 ```
+
+## Day 05
+
+**Problem**: [Sunny with a Chance of Asteroids](https://adventofcode.com/2019/day/5)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day05.ex](lib/aoc/day05.ex)
+
+**Tests**: [day05_test.exs](test/aoc/day05_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization
+
+The Intcode Virtual Machine returns, and introduces more complexity:
+
+ - new instructions (input, output, instruction pointer jumping, and two comparisons) with different parameter sizes
+ - memory modes for parameters (parameter as literal value, parameter as memory location of actual value)
+ 
+While our solution includes a whole new copy of the Intcode VM we wrote for Day 02, it really just modifies the core
+features of the original VM to add the new instructions and features.
+
+Instead of hard-coding literal values in the pattern matching of the `eval_at/3` function, we use a new `decode_instruction/1` 
+function, which decodes the various attributes (like parameter memory mode) of each op code. So instead of looking
+at an integer opcode like `1002`, we get a decoded instruction like `{:multiply, :position, :position, :position}` which
+tells us that our multiply instruction is using memory addressing (`:position`) instead of literal mode (`:immediate`) for the
+two parameters and the location to store the multiply result.
+
+Because our instructions now have different parameter counts, our program instruction pointer should move differently. The
+`eval_at/3` function now returns an instruction count when issuing a `:continue`, and a literal memory location for the
+new `:jump` return code. The `eval_program/3` function now uses these values to properly move the instruction pointer, and
+keep the program running.
+
+This update to the Intcode virtual machine also included the `input` and `output` functions. For the output, we just print
+to standard out. Input should come from the user - and it would have been simple to hard code this. But that made it difficult
+to test - we want the test code to be able to specify an input automatically. By luck (as we'll see in a later problem set for
+Day 07) the best way to make input work for both testing and user mode was to supply an _input function_ to the virtual machine.
+This input function is called whenever an input Opcode is encountered. In user mode, this just calls the `default_input/0`
+function:
+
+```elixir
+def default_input() do
+    {v, _} = IO.gets("input: ") |> Integer.parse()
+    v
+end
+```
+
+The default input encapsulates what we would have hard coded - get an input from the user via STDIN, and parse it into an
+integer. Because the input function can change, we can automate input when testing. The third parameter to `eval_program/3` is
+a keyword list, with the only (optional) keyword being `input_function`. When we're testing, we pass in a function that returns 
+a literal value when a program asks for an input, like:
+
+```elixir
+[input_function: fn -> 8 end]
+````
+
+With these updates to the Intcode VM in place, the solution to problem one is:
+
+```elixir
+def problem01() do
+   eval_program(program) 
+end
+```
+
+and the solution to problem two is just as simple. Instead of requiring human interaction for the one input to the problem,
+we use the input function option we added during testing:
+
+```elixir
+def problem02() do
+   eval_program(program, 0, [input_function: fn -> 5 end]) 
+end
+```
