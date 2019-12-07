@@ -28,6 +28,8 @@ defmodule Aoc.Day02 do
         1111
     
     """
+    def problem01(), do: eval_prog_01()
+    
     def eval_prog_01() do        
         eval_program(@program_01) 
     end
@@ -44,6 +46,8 @@ defmodule Aoc.Day02 do
         {20, 12}
     
     """
+    def problem02(), do: eval_prog_02()
+    
     def eval_prog_02() do
         
         idx = permute(99, 99)
