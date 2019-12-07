@@ -152,3 +152,77 @@ Solving problem two is mostly similar: instead of the Manhattan distance from th
 of the two wires that requires the least amount of total wire to get to. Our solution follows the same steps as for problem one,
 with the added step of keeping track of how many moves it takes the wires to get to each point they pass through. In the
 end, the final solution is similar: find the minimum value of the length of each wire for each intersection.
+
+## Day 04
+
+**Problem**: [Secure Container](https://adventofcode.com/2019/day/4)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day04.ex](lib/aoc/day04.ex)
+
+**Tests**: [day04_test.exs](test/aoc/day04_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Predicates, List Manipulation
+
+A password protected fuel depot! Instead of trying all six digit numbers, we have a few hints about how our
+password is composed.
+
+For both problem one and problem two we have a series of _predicates_: conditions that our candidate password 
+needs to meet to be one of the possibly valid passwords. The bulk of our solution for both problems is the
+functions we use to test each of the predicates. The predicates for requiring adjacent (duplicate) digits and
+an always equal or increasing digit value when reading from left to right look roughly the same in predicate
+form. For both we look at the first five digits of the candidate password one by one, and compare them to the
+next digit:
+
+```elixir
+def always_increasing?(candidate) do
+   
+   digits = Integer.digits(candidate)
+   
+   0..length(digits) - 1
+   |> Enum.map(
+       fn idx -> 
+           Enum.at(digits, idx) <= Enum.at(digits, idx + 1)
+       end
+   )
+   |> Enum.all?(fn r -> r end)
+    
+end
+```
+
+To test for always increasing (or equal) digits, each digit is compared to the next digit with `Enum.at(digits, idx) <= Enum.at(digits, idx + 1)`,
+while the test for adjacent duplicate digits compares each digit with `String.at(c_str, idx) == String.at(c_str, idx + 1)`. Why strings in one
+function and integers in another? Zero reason what so ever - honestly just writing the first thing that came to mind for each.
+
+Those two predicate functions are enough to solve the first problem, we can pass those, along with the bounds of our
+password candidates, to the `candidate_passwords/3` function, and determine how many possible passwords we're dealing with:
+
+```elixir
+candidate_passwords(124075, 580769, [&adjacent_digits?/1, &always_increasing?/1])
+|> length()
+```
+
+Since our `candidate_passwords/3` function takes a _list_ of predicates, we can easily extend it to solve problem two
+by writing another predicate: our candidate passwords must contain a series of _exactly two_ duplicate digits in a row. Multiple
+duplicates of different digits can exist, but one set must be two copies, no more no less. This predicate is a
+bit trickier, as a simple iterator like the first two predicates won't work - we need to look further ahead (or behind) than
+a single digit. We want to break apart a candidate password into _runs_ of duplicates, so that a number like `123345666` becomes
+a list like `[ [1], [2], [3, 3], [4], [5], [6, 6, 6]]`. This new list is easy to evaluate for our predicate - is any sub list
+of integers exactly length 2? With a function that breaks our number down in this way (see [`take_sequences/1`](https://github.com/patricknevindwyer/advent_of_code_2019/blob/master/lib/aoc/day04.ex#L106)), this new
+predicate function is easier to write:
+
+```elixir
+def exactly_two_adjacent_digits?(candidate) do
+    candidate
+    |> take_sequences()
+    |> Enum.any?(fn seq -> length(seq) == 2 end)    
+end
+```
+
+Now a solution to problem two looks almost exactly like a solution to problem one:
+
+```elixir
+candidate_passwords(124075, 580769, [&adjacent_digits?/1, &always_increasing?/1, &exactly_two_adjacent_digits?/1])
+|> length()
+```
