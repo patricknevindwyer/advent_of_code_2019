@@ -247,7 +247,7 @@ The Intcode Virtual Machine returns, and introduces more complexity:
 While our solution includes a whole new copy of the Intcode VM we wrote for Day 02, it really just modifies the core
 features of the original VM to add the new instructions and features.
 
-Instead of hard-coding literal values in the pattern matching of the `eval_at/3` function, we use a new `decode_instruction/1` 
+Instead of hard-coding literal values in the pattern matching of the `eval_at/3` function, we use a new [`decode_instruction/1`](https://github.com/patricknevindwyer/advent_of_code_2019/blob/master/lib/aoc/day05.ex#L289) 
 function, which decodes the various attributes (like parameter memory mode) of each op code. So instead of looking
 at an integer opcode like `1002`, we get a decoded instruction like `{:multiply, :position, :position, :position}` which
 tells us that our multiply instruction is using memory addressing (`:position`) instead of literal mode (`:immediate`) for the
