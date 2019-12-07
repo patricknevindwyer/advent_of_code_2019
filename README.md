@@ -362,3 +362,77 @@ body_b = catalog |> Map.get("SAN")
 
 catalog |> min_transfers(body_a, body_b)
 ```
+
+## Day 07
+
+**Problem**: [Amplification Circuit](https://adventofcode.com/2019/day/7)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day07.ex](lib/aoc/day07.ex)
+
+**Tests**: [day07_test.exs](test/aoc/day07_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes
+
+Remember in Day 05 when we added a bunch of instructions to the Intcode Virtual Machine, we noted that virtualizing the input opcode to use a
+function (letting us automate input) was a lucky coincidence? That's because on day 7 we need to virtualize input _and output_ of the virtual machine
+so that different VMs running an Intcode program can communicate. That's the heart of problems one and two: after initialization with an input
+parameter we supply, five different Intcode VMs communicate their output to the input of the next VM. This is a bit like a computer network, or
+multiple programs piping data between each other via **STDIN** and **STDOUT**. 
+
+We need to make some superficial changes to our virtual machine in the `eval_at/3` function to use newly virtualized output methods (like we did earlier
+for input methods). Running multiple Intcode VMs that can pipe data back and forth in Elixir is really, really easy - we spawn a new process for each
+VM. Using the built in `send` and `receive` functions to move data between processes, and the virtualized I/O methods we've added to the VM, we've
+got a fairly quick solution.
+
+Our VMs will take an *input_function* that uses `receive` to wait for data:
+
+```elixir
+def receive_input() do
+  receive do
+     v -> v 
+  end 
+end
+```
+
+and an *output_function* that sends data between processes. The output function is actually a function that generates a function: we we create
+our virtual machines, we specify _which process_ each VM should send it's output to:
+
+```elixir
+def send_output(dest_pid) do
+  fn v ->
+     send(dest_pid, v)
+  end 
+end
+```
+
+we can use these functions together to setup a VM running in a separate process:
+
+```elixir
+spawn_program(
+    program, 
+    [
+        input_function: &receive_input/0, 
+        output_function: send_output(amp_e)
+    ]
+)
+```
+
+Here we've launched a VM running `program` that waits for input (from another VM, _or from another source_), and sends output to the process
+named `amp_e`.
+
+The full solution for problem one launches the five VMs for the five amplifiers in reverse order (because we need a process ID for one VM to send 
+output to another), with an extra virtualized function (the `halt_function`) for the last amplifier/VM, so we can wait in our main process for
+everything to finish. The VMs are launched, and run, for a specific set of initialization parameters, in [`run_amplifiers/2`](https://github.com/patricknevindwyer/advent_of_code_2019/blob/master/lib/aoc/day07.ex#L63).
+
+For problem two, a feedback loop is introduced. The last amplifier/VM in the series send output to the _first_ amplifier/VM, creating a loop. Only
+when the last VM in the series issues a `halt` command is the program series complete - the last output from the last VM before the `halt` command
+is our final answer. This poses a small problem: our setup for solving problem one required knowing the process ID of where to send output when
+launching each VM. Because we're starting a _loop_ - where the last VM send output to the first, this is impossible. To get around this we exploit the
+fact that there _is_ a process ID we always know: the main process. We deploy a [trampoline](https://en.wikipedia.org/wiki/Trampoline_(computing)#) in
+our main process, which is already collecting output from the last VM. When the main process receives an output message from the last VM in the
+series, it forwards that value on to the _first_ VM, completing the loop. The VM series with feedback is in [`run_feedback_amplifiers/2`](https://github.com/patricknevindwyer/advent_of_code_2019/blob/master/lib/aoc/day07.ex#L87).
+
+The solution code in `problem01/0` and `problem02/0` generates the permutations of the VM configuration parameters, runs each VM, and finds the
+maximum output value of the amplifier chain.
