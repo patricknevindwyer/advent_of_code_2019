@@ -501,3 +501,6 @@ path_to_image
 |> flatten_image()
 |> display_image()
 ```
+
+If the pattern of puzzles so far is any indication, we'll being seeing the Space Image Format again soon, probably with more data encoded in the image,
+and larger image sizes. Who knows, maybe we even write a SIF decoder and display in Intcode...
