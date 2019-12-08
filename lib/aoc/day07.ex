@@ -1,6 +1,8 @@
 defmodule Aoc.Day07 do
    @moduledoc """
-   
+    Advent of Code 2019. Day 07. Problem 01/02.
+    
+    https://adventofcode.com/2019/day/7
    """ 
    
    require Aoc.Day05

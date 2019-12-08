@@ -26,6 +26,7 @@ code for each day can be found in [`test/aoc`](test/aoc).
  * [Day 05](#day-05) - ⭐️⭐️
  * [Day 06](#day-06) - ⭐️⭐️
  * [Day 07](#day-07) - ⭐️⭐️
+ * [Day 08](#day-08) - ⭐️⭐️
 
 
 ## Day 01
@@ -436,3 +437,67 @@ series, it forwards that value on to the _first_ VM, completing the loop. The VM
 
 The solution code in `problem01/0` and `problem02/0` generates the permutations of the VM configuration parameters, runs each VM, and finds the
 maximum output value of the amplifier chain.
+
+
+## Day 08
+
+**Problem**: [Space Image Format](https://adventofcode.com/2019/day/8)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day08.ex](lib/aoc/day08.ex)
+
+**Tests**: [day08_test.exs](test/aoc/day08_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Image Decoding
+
+The elves have sent us an image in _Space Image Format_, an image encoding with pixel data on multiple layers. 
+
+For problem one we need to setup a full image decoder to get our layer data, and test that it isn't corrupted. The image decoder itself isn't too
+hard to piece together - we read in a data file, parse out the pixel data, and convert it to integers. The only interesting part is breaking the
+data into layers - for this we add another new chunking function, `take_chunks/3`. This function recursively breaks a single list (the pixel data
+for our entire image) into sublists of a specific size (the pixel data for each layer).
+
+The remainder of problem one is testing the layer data for corruption. The Elixir methods for working with enumerables are super useful here - one
+set of enumerations maps every layer to the number of zeroes in the layer, and a second set of enumerations takes that layer and counts up the
+ones and twos. Problem one solved.
+
+We have image data on hand, it would make sense that we should see the image, right? Problem two defines _how_ the image layers work together, with
+some pixel values being transparent, and others being black or white. We need to flatten our layers to find the _real_ pixel value, and display the
+results.
+
+For the flattening function, the built in Elixir Enum functions really shine:
+
+```elixir
+def flatten_image(layers) do
+    layers
+    |> Enum.zip()
+    |> Enum.map(
+        fn pixel_set ->
+            pixel_set
+            |> Tuple.to_list()
+            |> Enum.drop_while(fn p -> p == 2 end)
+            |> List.first()
+        end
+    )
+end
+```
+
+Knowing we have equally sized layers, the `Enum.zip/1` function turns our list of layer data into a list of pixel values grouped by pixel. So a
+list of layers that started with `[ [a, b, c, ...], [d, e, f, ...], [g, h, i, ...], ...]` would now look like `[{a, d, g}, {b, e, h}, {c, f, i}, ...]`. We
+can then map each pixel tuple, walking through the values until we find the first non-transparent value for that pixel. The result of the `Enum.map/2` is
+a new list of pixel data - our flattened image.
+
+The image we're working with is small (25 pixels wide, by 6 pixels tall) - we could easily display that on STDOUT using spaces and characters. The
+`display_image/2` function takes a flattened image, and walks through the pixel data row by row, printing a space for black pixels, and a `▊` character
+for white pixels. The `take_chunks/3` function we wrote earlier for the image decoder is helpful here - we use it to break down our flattend image
+into rows of pixels.
+
+In the end, the solution to problem two is drastically simpler than the solution for problem one:
+
+```elixir
+path_to_image
+|> load_image()
+|> flatten_image()
+|> display_image()
+```
