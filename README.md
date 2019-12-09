@@ -504,3 +504,82 @@ path_to_image
 
 If the pattern of puzzles so far is any indication, we'll being seeing the Space Image Format again soon, probably with more data encoded in the image,
 and larger image sizes. Who knows, maybe we even write a SIF decoder and display in Intcode...
+
+## Day 09
+
+**Problem**: [Sensor Boost](https://adventofcode.com/2019/day/9)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day09.ex](lib/aoc/day09.ex)
+
+**Tests**: [day09_test.exs](test/aoc/day09_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes, State
+
+Another day, another Intcode virtual machine update. This round, we add the following to our VM:
+
+ - A new memory mode - relative addressing
+ - A new _op code_ - adjusting the _relative memory mode_ base value
+ - Large number support (no change for us - we got that out of the box with standard Elixir integers)
+ - Expanded VM memory
+ 
+The new memory mode seems straight forward, but causes us the most work. Up until now our Intcode virtual machine was setup to track
+the program code as the only mutable state - everything else was computed on the fly. We knew more state was probably going to be
+required (like registers, external memory, or, it turns out, an alternate instruction pointer), but we'd put off adding an explicit
+VM state variable. Because we're running our VM with recursion, the state data needs to be tracked in a bunch of places - every return
+code (like `continue` and `jump`), and every call into `eval_program/4` and `eval_at/4`. Once we're confident the VM state is being
+handed around properly (we're using a atom index map, for ease of use), we can focus on the new memory mode.
+
+The `relative` memory mode works from a base address (starting at `0`), which can be used as a lookup for any parameter by _adding_ the
+parameter value to the relative base address. This is a bit like `position` mode, but requires some extra book-keeping. It would be
+fairly boring if the base address for `relative` mode was always the same, so there's a new Opcode that can modify the base address.
+
+Up until now our virtual machine has assumed that result values from opcodes (like `multiply`, `add`, and `less_than`) were always
+in `position` mode. The BOOST program for Day 9 runs diagnostics on the virtual machine, and now tests to make sure position and relative
+mode both work for storage addresses. This requires a minor update to our VM to catch these circumstances.
+
+With added memory modes it makes sense to _finally_ abstract away the parameter lookup that has been hard coded into every instruction
+case. This removes some error prone code, and reduces the overall foot print of each instruction. In our `add` instruction handler, the
+parameter value lookup turns from:
+
+```elixir
+[l_addr, r_addr, store_addr] = Enum.slice(program, offset + 1, 3)
+
+l_val = case l_addr_mode do
+    :position -> Enum.at(program, l_addr)
+    :immediate -> l_addr
+end
+
+r_val = case r_addr_mode do
+    :position -> Enum.at(program, r_addr)
+    :immediate -> r_addr
+end
+```
+
+into:
+
+```elixir
+[l_addr, r_addr, store_addr] = Enum.slice(program, offset + 1, 3)
+
+l_val = decode_parameter(program, state, l_addr, l_addr_mode)
+r_val = decode_parameter(program, state, r_addr, r_addr_mode)
+```
+
+Much nicer.
+
+The last bit of Day 9 updates involves _how much space_ is allocated for a program. The previous versions of our VM, and the Intcode
+programs it ran, always worked within the address space of the provided program - if a program was only 100 instructions long, it never
+tried to access a value beyond address 100. This update to Intcode, and the diagnostic program it runs, doesn't follow this limit. It explicitly
+requires memory beyond the end of the literal program. At some point we may need a more elegant solution to this problem, like dynamically extending
+the program space. For now, we remap programs running on the Intcode VM into a larger, `0` padded list before running.
+
+With these updates in place, along with a utility method to load a program from a file, the solutions for problems one _and two_ are easy:
+
+```elixir
+"data/day09/boost.ic"
+|> program_from_file()
+|> run_intcode()
+``` 
+
+An input of `1` for problem one, an `2` for problem two, and we're done!
