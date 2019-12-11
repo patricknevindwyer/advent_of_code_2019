@@ -1,6 +1,9 @@
 defmodule Aoc.Day10 do
-   @moduledoc """
-   """
+    @moduledoc """
+     Advent of Code 2019. Day 10. Problem 01/02.
+    
+     https://adventofcode.com/2019/day/10
+    """ 
 
    def problem01 do
        asteroid_map = asteroid_map_from_file("data/day10/problem_01.map")            

@@ -685,3 +685,19 @@ asteroid_map = asteroid_map_from_file("data/day10/problem_01.map")
 ```
 
 Isn't geometry fun?
+
+
+## Day 11
+
+**Problem**: [Space Police](https://adventofcode.com/2019/day/11)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day11.ex](lib/aoc/day11.ex)
+
+**Tests**: [day11_test.exs](test/aoc/day11_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes, State
+
+ - updated `run_intcode/2`
+ 
