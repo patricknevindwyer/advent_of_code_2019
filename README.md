@@ -27,6 +27,8 @@ code for each day can be found in [`test/aoc`](test/aoc).
  * [Day 06](#day-06) - ⭐️⭐️
  * [Day 07](#day-07) - ⭐️⭐️
  * [Day 08](#day-08) - ⭐️⭐️
+ * [Day 09](#day-09) - ⭐️⭐️
+ * [Day 10](#day-10) - ⭐️⭐️
 
 
 ## Day 01
@@ -583,3 +585,103 @@ With these updates in place, along with a utility method to load a program from 
 ``` 
 
 An input of `1` for problem one, an `2` for problem two, and we're done!
+
+
+## Day 10
+
+**Problem**: [Monitoring Station](https://adventofcode.com/2019/day/10)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day10.ex](lib/aoc/day10.ex)
+
+**Tests**: [day10_test.exs](test/aoc/day10_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Occlusion, 2D Graphics, Geometry
+
+A break from Intcode instructions to work with... geometry! The wording of the initial problem for Day 10 is very precise, and while
+it makes great big gesturing motions towards [occlusion culling](https://en.wikipedia.org/wiki/Hidden-surface_determination) in a full
+2D space, because of the _very_ precise wording of the problem, we're going to side step the (big, hairy, frustraing) mess of generating
+a full scene representation and take advantage of the fact that our asteroid map is perfectly mapped to an integer grid.
+
+Because we're on an integer grid (or just a standard planar graph), and all our asteroids are on grid points (like `(3, 4)` or `(11, 0)`),
+we can use a really simple _slope_ calculation to determine which asteroids block view of each other. The algorithm is fairly simple. To determine
+if the view from one asteroid to another is occluded:
+
+ - Given three asteroids, at `(1, 1)`, `(5, 7)`, and `(7, 10)` called `A`, `B`, and `C`
+ - The slope from `A` to `C` is `6/9`
+ - The simplified fraction of the slope is `2/3`
+ - Walk up the coordinates from `A` to `C` by the simplified slope
+ - first step is `(3, 4)`, no asteroid there...
+ - second step is `(5, 7)`, and asteroid `B` is there!
+ - last step is `(7, 10)`, which is asteroid `C`
+ - We found _at least_ one other asteroid between `A` and `C`, so the view of `C` is **occluded** when looking from `A`
+
+We know ahead of time where all of our asteroids are (and they're just points on a plane), so it's _drastically_ easier to evaluate the
+view from every asteroid of every other asteroid to determine what is visible from where, than it is to try and run a full 2D surface occlusion. It
+may be `O(n^2)` over the number of asteroids to evaluate problem one, but that beats the speed of a true 2D occlusion algorithm (ray tracing is _notoriously_
+compute intensive). In the end we reduce the computation time even further (for problem one at least) by building a Map of know asteroids, which takes
+the inner loop (of checking for existing asteroids) down to an `O(1)` operation.
+
+Using our occlusion algorithm to cheat at our visibility calculations, and wrapping the loop over every asteroid to see _what_ is visible from _where_, 
+it's fairly easy to solve problem one:
+
+```elixir
+asteroid_map = asteroid_map_from_file("data/day10/problem_01.map")            
+highest_visibility_asteroid(asteroid_map)
+```
+
+Solving problem two builds on problem one. We want to find the _vaporization_ order, which is explained in the problem statement. Knowing that
+we can quickly determine which asteroids are visible, and which are occluded, from any given vantage point, the algorithm for building our
+vaporization ordered list becomes:
+
+ - given an asteroid map, and a central asteroid from which we'll be vaporizing everything
+ - remove any occluded asteroids from the map
+ - order the remaining asteroids in clockwise direction from the top, in the order they'd be hit
+ - build the list of asteroids _we didn't hit_
+ - recurse until done
+ 
+```elixir
+def vaporization_order([], _asteroid), do: []
+def vaporization_order(asteroid_map, asteroid) do
+
+   # remove occulusions
+   unoccluded = remove_occluded(asteroid_map, asteroid)
+   
+   # order by angle
+   ordered_asteroids = order_asteroids_by_angle(unoccluded, asteroid)
+   
+   # remove from original
+   remaining_asteroids = remove_from(asteroid_map, ordered_asteroids ++ [asteroid])
+   
+   # recurse
+   ordered_asteroids ++ vaporization_order(remaining_asteroids, asteroid)
+   
+end
+``` 
+
+The only tricky operation is the `order_asteroids_by_angle/2` method; our coordinate space is wonky (we're in pixel orientation, not graph), and
+we want to start from the very top, and go clockwise. The [atan2](https://en.wikipedia.org/wiki/Atan2) function will get us a mostly useful angle
+in the ordering we want, given the relative position of our origin asteroid and any other asteroid, but we'll need to mess with the values a bit.
+Given an origin asteroid at `(o_x, o_y)` and a candidate asteroid in a sorting algorithm at `(c_x, c_y)` we use the modified `atan2` of:
+
+```elixir
+:math.atan2((c_x - o_x + 0.001) * -1, (c_y - o_y))
+```
+
+This orients our mapped ordering space so the atan2 starts in the **up** direction, and proceeds normally clockwise. Oh, and the `0.001` term pushes
+the first parameter of `atan2` so that a value of `0` doesn't hit an asymptote of `atan2` (which results in vertically aligned coordinates mapping
+strangely).
+
+The elves are betting on which asteroid will be the 200th destroyed. Problem two tells us:
+
+```elixir
+asteroid_map = asteroid_map_from_file("data/day10/problem_01.map")            
+{laser_base, _} = highest_visibility_asteroid(asteroid_map)
+
+{bet_x, bet_y} = asteroid_map
+|> vaporization_order(laser_base)
+|> Enum.at(199)
+```
+
+Isn't geometry fun?
