@@ -697,7 +697,7 @@ Isn't geometry fun?
 
 **Tests**: [day11_test.exs](test/aoc/day11_test.exs)
 
-**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes, State
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes, State, 2D Graphics, Turtle Graphics
 
 Image generation meets Intcode. My prediction from Day 08 wasn't too far off; we may not be writing a SIF decoder, but we are creating images using 
 Intcode programs. This doesn't require any modifications to the Intcode VM itself, but we will add a few methods to manage state for our [Turtle](https://en.wikipedia.org/wiki/Turtle_graphics)^W Hull Bot as in navigates a 2D space to draw our ship registration code.
