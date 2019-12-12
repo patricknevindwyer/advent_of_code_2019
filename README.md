@@ -29,6 +29,7 @@ code for each day can be found in [`test/aoc`](test/aoc).
  * [Day 08](#day-08) - ⭐️⭐️
  * [Day 09](#day-09) - ⭐️⭐️
  * [Day 10](#day-10) - ⭐️⭐️
+ * [Day 11](#day-11) - ⭐️⭐️
 
 
 ## Day 01
