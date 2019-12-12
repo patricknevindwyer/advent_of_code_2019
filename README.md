@@ -699,5 +699,86 @@ Isn't geometry fun?
 
 **Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes, State
 
- - updated `run_intcode/2`
+Image generation meets Intcode. My prediction from Day 08 wasn't too far off; we may not be writing a SIF decoder, but we are creating images using 
+Intcode programs. This doesn't require any modifications to the Intcode VM itself, but we will add a few methods to manage state for our [Turtle](https://en.wikipedia.org/wiki/Turtle_graphics)^W Hull Bot as in navigates a 2D space to draw our ship registration code.
+
+Managing state for the Hull Bot isn't terrible - a few methods for moving the bot and handling input and output, and a few test methods for simulating
+bot movement for testing purposes. With an extra few methods for re-routing input and output from the Intcode VM (I lied - we modified the VM start method
+slightly, so that we could specify how to await VM IO) to the Hullbot, we have a working first problem solution - we know the size of the test area, so
+no extra configuration required. The _counting_ part of the problem (how many spaces actually get painted) is solved with a bit of a cheat: every space on
+the hull starts out set to `-1`, or _unpainted_. When painted, the space is set to `0` for black, and `1` for white. When it comes time to test the value
+on a tile (or later to draw the tiles) a `0` _or a_ `-1` is treated as black.
+
+Handling the IO for the interaction between the Intcode VM and the Hull Bot is done with a set of `await_*` functions. Because we know that output from
+the VM will always start with a paint instruction, and then a move instruction, we can chain together two `await_*` functions that expect this
+ordering:
+
+```elixir
+def await_paint(hull_bot) do
+
+    receive do
+       :halt -> hull_bot
+       
+       {:input, dest} -> 
+           send_hull_bot_sensor_input(hull_bot, dest) 
+           await_paint(hull_bot)
+           
+       v ->
+           
+           hull_bot
+           |> hull_bot_paint(v)
+           |> await_move()
+    end
+end
+
+def await_move(hull_bot) do
+    
+    receive do
+        :halt -> hull_bot
+    
+        {:input, dest} -> 
+            send_hull_bot_sensor_input(hull_bot, dest) 
+            await_move(hull_bot)
+        
+        v ->
+            hull_bot
+            |> hull_bot_rotate_and_move(rot_by(v))
+            |> await_paint()
+    end        
+end
+```
+
+Both functions listen for input requests from the VM, where we read the current tile of the Hull Bot and send the color as input to the Intcode
+program, as well as for the **halt** instruction, which signals program termination. When `await_paint/1` receives an output value, it informs
+the Hull Bot, and passes `await` control on to the `await_move/1`. The `await_move/1` function passes output to the Hull Bot to control movement,
+and then hands `await` control _back_ to `await_paint/1`, and the cycle continues. 
+
+For problem two, we have a slight issue - it's never specified _where_ the bot will start, or _how big_ the hull space is that might get painted. There
+are a handful of approaches we could take: automatic resizing, iterative testing to resize when the VM crashes, etc. We take a bit simpler approach: draw
+in a really large space, and crop the image space when we're done to _just the tiles_ that got painted. In this case our hacky solution for counting tiles
+in problem one saves us _a ton_ of extra work in problem two. 
  
+In the end the solutions for problem one and two are _very_ similar. Run a hull bot program, and count painted panels:
+
+```elixir
+run_hull_bot(program, hull_bot)
+|> painted_panel_count()
+```
+
+or run a hull bot and display the results:
+
+```elixir
+run_hull_bot(program, hull_bot)
+|> display_hull()
+```
+
+our output is a (sort of nice) ASCII image output:
+
+```bash
+  ▊▊  ▊  ▊  ▊▊  ▊  ▊ ▊▊▊▊ ▊▊▊▊ ▊▊▊  ▊  ▊  
+ ▊  ▊ ▊  ▊ ▊  ▊ ▊  ▊    ▊ ▊    ▊  ▊ ▊ ▊   
+ ▊  ▊ ▊▊▊▊ ▊    ▊▊▊▊   ▊  ▊▊▊  ▊  ▊ ▊▊    
+ ▊▊▊▊ ▊  ▊ ▊    ▊  ▊  ▊   ▊    ▊▊▊  ▊ ▊   
+ ▊  ▊ ▊  ▊ ▊  ▊ ▊  ▊ ▊    ▊    ▊    ▊ ▊   
+ ▊  ▊ ▊  ▊  ▊▊  ▊  ▊ ▊▊▊▊ ▊▊▊▊ ▊    ▊  ▊ 
+```
