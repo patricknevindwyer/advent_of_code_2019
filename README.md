@@ -30,6 +30,7 @@ code for each day can be found in [`test/aoc`](test/aoc).
  * [Day 09](#day-09) - ⭐️⭐️
  * [Day 10](#day-10) - ⭐️⭐️
  * [Day 11](#day-11) - ⭐️⭐️
+ * [Day 12](#day-12) - ⭐️⭐️
 
 
 ## Day 01
@@ -783,3 +784,76 @@ our output is a (sort of nice) ASCII image output:
  ▊  ▊ ▊  ▊ ▊  ▊ ▊  ▊ ▊    ▊    ▊    ▊ ▊   
  ▊  ▊ ▊  ▊  ▊▊  ▊  ▊ ▊▊▊▊ ▊▊▊▊ ▊    ▊  ▊ 
 ```
+
+
+## Day 12
+
+**Problem**: [The N-Body Problem](https://adventofcode.com/2019/day/12)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day12.ex](lib/aoc/day12.ex)
+
+**Tests**: [day12_test.exs](test/aoc/day12_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Structs, Agent Based Simulation, Simulation, Multi-variate analysis
+
+Given that we're flying through space searching for Santa, it was only a matter of time before we encountered the [N-Body Problem](https://en.wikipedia.org/wiki/N-body_simulation) - thankfully it's only for four celestial bodies. And thankfully (I guess?) problem
+one is deceptively simple: we need to build a system simulator that handles three spatial dimensions and velocity. The velocity calculations are
+super simple, and the dynamics of each step in the simulation are clear, concise, and fast. A fair bit of test code to make sure we didn't miss
+anything, but the solution for problem one is quick:
+
+```elixir
+bodies_from_file("data/day12/problem_01.bodies")
+|> step_bodies(1000)
+|> system_energy()
+```
+
+Nothing surprising, nothing _terribly_ difficult. Stepping the simulation forward by `N` steps is reasonably quick, with the book keeping taken
+care of by the the support code for our `Body` struct. Calculating system energy is a closed form equation. Hmm. Something _feels_ wrong. Like an
+ominous cloud on the horizon.
+
+That ominous cloud is problem two. The premise is simple, and doesn't directly change the way we've built our simulation so far: determine how
+many steps it takes for our N-Body system to _exactly_ repeat a previous state, including positions and velocities. For the first test case this
+is easy: just track the previous states (we use a `MapSet`), and step forward until we hit a known state. For the first example this only takes
+a few thousand steps. Easy.
+
+For the second example (and the problem two system of bodies) this same approach would take prohibitively long, if we could even find a computer
+with enough memory to hold our history of previous states. At a million steps per second, it would take approximately 10 years to solve the problem
+two system. Looking at the problem for awhile (and digging through Reddit, with a h/t to [What am I not seeing?](https://www.reddit.com/r/adventofcode/comments/e9jxh2/help_2019_day_12_part_2_what_am_i_not_seeing/) ), carefully reading the problem statement's
+admonishment to "find a more efficient way to simulate the universe", and staring off into the void for about 10 minutes, the solution presented
+itself:
+
+> the three spatial dimensions are independent of one another
+
+in our simulation calculations the three dimensions operate independently - velocity in the `x` direction is only effected by the `x` location of
+the other bodies, `y` by `y`, etc. This means we can run the simulation, and only look for a repeat in system state in a single dimension. If we
+find when the `x`, `y`, and `z` dimensions repeat independently (which is, hopefully, a _much_ more tractable calculation), we can use that information
+to determine when the entire system would repeat in the combined dimensions using a Least Common Multiple. 
+
+We can then write a function to calculate the number of steps for the full system to repeat a previously seen state with:
+
+```elixir
+def steps_until_repeat(bodies) do        
+    state_map = MapSet.new() |> MapSet.put(state_vector(bodies, :x))
+    x_steps = steps_until_repeat(bodies, :x, state_map, 0)
+    
+    state_map = MapSet.new() |> MapSet.put(state_vector(bodies, :y))
+    y_steps = steps_until_repeat(bodies, :y, state_map, 0)
+    
+    state_map = MapSet.new() |> MapSet.put(state_vector(bodies, :z))
+    z_steps = steps_until_repeat(bodies, :z, state_map, 0)
+    
+    lcm(x_steps, lcm(y_steps, z_steps))
+end
+```
+
+With the `steps_until_repeat/1` function, the solution to problem two becomes:
+
+```elixir
+bodies_from_file("data/day12/problem_01.bodies")
+|> steps_until_repeat
+```
+
+Even with our optimized solution it takes about 10-20 seconds to solve problem two, which makes sense. The system doesn't repeat itself until
+well after 320 _trillion_ steps.

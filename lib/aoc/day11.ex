@@ -1,8 +1,8 @@
 defmodule Aoc.Day11 do
     @moduledoc """
-    Advent of Code 2019. Day 09. Problem 01/02.
+    Advent of Code 2019. Day 11. Problem 01/02.
     
-    https://adventofcode.com/2019/day/9
+    https://adventofcode.com/2019/day/11
     """ 
     
     def problem02 do
