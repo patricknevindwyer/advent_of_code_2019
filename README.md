@@ -19,6 +19,8 @@ code for each day can be found in [`test/aoc`](test/aoc).
 
 # Solutions
 
+Solution summaries:
+
  * [Day 01](#day-01) - ⭐️⭐️
  * [Day 02](#day-02) - ⭐️⭐️
  * [Day 03](#day-03) - ⭐️⭐️
@@ -31,6 +33,11 @@ code for each day can be found in [`test/aoc`](test/aoc).
  * [Day 10](#day-10) - ⭐️⭐️
  * [Day 11](#day-11) - ⭐️⭐️
  * [Day 12](#day-12) - ⭐️⭐️
+ * [Day 13](#day-13) - ⭐️⭐️
+
+Support modules:
+
+ * [Intcode VM](lib/aoc/intcode.ex) - Updated Intcode Virtual Machine, with support, IO, and program functions
 
 
 ## Day 01
@@ -857,3 +864,142 @@ bodies_from_file("data/day12/problem_01.bodies")
 
 Even with our optimized solution it takes about 10-20 seconds to solve problem two, which makes sense. The system doesn't repeat itself until
 well after 320 _trillion_ steps.
+
+
+## Day 13
+
+**Problem**: [Care Package](https://adventofcode.com/2019/day/13)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day13.ex](lib/aoc/day13.ex)
+
+**Tests**: [day13_test.exs](test/aoc/day13_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Pattern Matching, Virtual Machine, Input/Output Virtualization, Processes, State, 2D Graphics, Game Emulation
+
+We're building a [MAME](https://en.wikipedia.org/wiki/MAME) system, are't we?
+
+```bash
+▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊                                  
+▊                                            ▊                                  
+▊ =  = == =  ====                            ▊                                  
+▊  =  == =     =                         =   ▊                                  
+▊           =     =               =     ==== ▊                                  
+▊ =  ===    =                                ▊                                  
+▊ == =                                       ▊                                  
+▊          =                     =         = ▊                                  
+▊                                     =   =  ▊                                  
+▊      =                                     ▊                                  
+▊     ====                          =        ▊                                  
+▊      ==  =                                 ▊                                  
+▊                                            ▊                                  
+▊                          =           ==    ▊                                  
+▊                                       =    ▊                                  
+▊      =                                     ▊                                  
+▊                                       *    ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊    =                                       ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊ 
+```
+
+The elves have sent a care package - an arcade game that can run on our Intcode machine, provided we wire up an input system. The
+game state setup is similar to our Hull Bot - tracking and updating state through VM outputs. This is a good time to take the opportunity
+to move our (hopefully nearing complete) Intcode VM into it's own module, and add a generalized output redirection method:
+
+```elixir
+Intcode.await_io(
+    game_state, 
+    output_function: &handle_game_instruction/2, 
+    output_count: 3, 
+    input_function: &handle_game_input/1
+)
+```
+
+The `await_io/2` function passes a state variable, much like Elixir's [GenServer](https://hexdocs.pm/elixir/GenServer.html). With `output_function`
+and `output_count` parameters we can gather up a defined number of VM outputs before sending them on to a handler function - for our arcade game
+the outputs will always be three consecutive values for updating the game.
+
+We could manually provide input to our program, but that sounds like it could take awhile. Instead we'll have the game auto-play:
+
+```elixir
+def handle_game_input(game_state) do
+            
+    {ball_x, _} = game_state |> find_coord_of(4)
+    {pad_x, _} = game_state |> find_coord_of(3)
+    
+    cond do
+       ball_x < pad_x -> -1
+       pad_x < ball_x -> 1
+       true -> 0 
+    end
+end
+```
+
+Whenever the Arcade VM requests input, we move our paddle to try and be directly under the ball. Simple, but effective, [breakout](https://en.wikipedia.org/wiki/Breakout_(video_game)) strategy.
+
+For problem one, we don't even need to play the game - just run a sanity check to count the number of break-able blocks
+on screen when the program starts up:
+
+```elixir
+"data/day13/rom.ic"
+|> Intcode.program_from_file()
+|> run_arcade()
+|> block_count()
+```
+
+Insert some quarters for problem two:
+
+```elixir
+        game_res = "data/day13/rom.ic"
+        |> Intcode.program_from_file()
+        
+        # write two quarters to memory address 0 for free-play
+        |> Intcode.memory_write(0, 2)
+        
+        # run our program
+        |> run_arcade()
+        
+        # draw the result
+        |> draw_screen()
+        
+        # and print the score
+        IO.puts("Score: #{game_res.settings.score}")
+```
+
+and we can run the game until we win:
+
+```bash
+▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊     *                                      ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊                                            ▊                                  
+▊     -                                      ▊                                  
+▊                                            ▊  
+```
