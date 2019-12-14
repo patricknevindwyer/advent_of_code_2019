@@ -4,8 +4,6 @@ defmodule Aoc.Day13 do
     
     https://adventofcode.com/2019/day/13
     
-    TODO: input function to move paddle
-
     """ 
     
     alias Aoc.Intcode
@@ -105,7 +103,7 @@ defmodule Aoc.Day13 do
     """
     def handle_game_instruction(game_state, [x, y, p]) do
         
-        if rem(game_state.steps, 100) == 0 do
+        if rem(game_state.steps, 100) == 0 and (game_state.steps != 0) do
             draw_screen(game_state)
         end
         
