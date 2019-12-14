@@ -34,6 +34,7 @@ Solution summaries:
  * [Day 11](#day-11) - ⭐️⭐️
  * [Day 12](#day-12) - ⭐️⭐️
  * [Day 13](#day-13) - ⭐️⭐️
+ * [Day 14](#day-14) - ⭐️⭐️
 
 Support modules:
 
@@ -1002,4 +1003,109 @@ and we can run the game until we win:
 ▊                                            ▊                                  
 ▊     -                                      ▊                                  
 ▊                                            ▊  
+```
+
+
+## Day 14
+
+**Problem**: [Space Stoichiometry](https://adventofcode.com/2019/day/14)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day14.ex](lib/aoc/day14.ex)
+
+**Tests**: [day14_test.exs](test/aoc/day14_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Chemical Reactions, Constraint Solver, Binary Search
+
+Every good space ship should be able to make it's own fuel. With the help of a batch of chemical equations, our ship is no exception. For problem
+one, we need to take the list of chemical reaction equations, and determine how they all fit together to turn raw `ORE` into `FUEL`. This is a
+classic constraint solving problem - each of the chemical reactions takes one or more input quantities to create some number of output quantities. 
+We can invert those inputs and outputs into a series of statements where creating some amount of _output_ requires some number of _inputs_. Working
+backwards from a desired end state (like, wanting to create `1 FUEL`), we evaluate the reactions until we end up with only some quantity of `ORE`
+required. If our chemical reactions were the simple set of formulae:
+
+```
+1 ORE => 1 A
+3 ORE => 1 B
+5 ORE => 1 C
+1 A, 1 B, 2 C => 1 FUEL
+```
+
+We could work through our constraints, building up a list of requirements by appending the results of each step to a list of required chemicals. Starting
+with just the requirement of needing 1 FUEL:
+
+```
+[1 FUEL]
+```
+
+From our reactions, we know how to produce one fuel, and our list of required chemicals becomes:
+
+```
+[1 A, 1 B, 2 C]
+```
+
+Next we need to produce `A`, which requires `ORE`, and our requirements list updates again:
+
+```
+[1 B, 2 C, 1 ORE]
+```
+
+The head of our list is now creating some `B`, again requiring `ORE`:
+
+```
+[2 C, 1 ORE, 3 ORE]
+```
+
+While creating `1 A` only required `1 ORE`, creating the same amount of `B` took `3 ORE`. Next step is producing some `C`. We need `2 C`, but
+our formula for `C` only produces one. Let's run the reaction twice, requiring `10 ORE`. Our requirements list is now:
+
+```
+[1 ORE, 3 ORE, 10 ORE]
+```
+
+The only thing left in our constraint list is `ORE` - our chemical reactions are complete, and summing up the `ORE` it looks like we need `14 ORE`
+to produce one fuel.
+
+To solve problem one, we use _almost exactly_ this approach: we recursively work through a set of required chemicals, until only `ORE` is left. To
+generate a correct solution we need to account for an edge case: sometimes we need to produce a chemical in some quantity (like needing `7 A`), but
+our reaction creates more than we need (like `10 A`). We need to keep track of this extra production, as it can be applied in different parts of our
+reaction evaluation. The first example set of reactions covers this - a naive solution that doesn't account for extra production will over estimate
+the required amount of `ORE` needed to produce 1 fuel.
+
+With a basic constraint solver that walks through the above steps (see [`ore_requirements/3`](lib/aoc/day14#L57) ), solving problem one becomes:
+
+```elixir
+reactions_from_file("data/day14/problem_01.chems")
+|> ore_requirements(%{"FUEL" => 1})
+```
+
+We made a number of lucky assumptions in the solver we wrote for problem one: we didn't hard code the number of fuel to produce, the recursive solver
+is built to find an efficient solution, and we carry along an accounting of extra production of chemicals from reactions. All of these are important
+when it comes to solving problem two. Finding out _the maximum_ amount of fuel we can produce given a quantity of ore is interesting - we could brute
+force the answer and incrementally walk from `1` up to some solution - but given the maximum amount of fuel cited for the ealier examples, this would
+be time prohibitive. 
+
+But finding that maximum quantity of fuel, when we can use the `ore_requirements` function from problem one to quickly determine how much ore is needed
+for any particular amount of fuel, sounds a lot like a search problem. We need to efficiently search through _some range_ of integers. If we could determine
+and upper bound on the amount of fuel, this would break down to a binary search problem. Knowing that the upper bound could be fairly large (into the millions
+for our final solution), we'll take a simple approach by combining a binary search with a bounds search:
+
+ 1. Evaluate a quantity of fuel - 
+ 2. if the amount of ore required is _less_ than the total ore available, double our fuel and try again
+ 3. if the amount of ore required is _greater_ than the total ore available, start a binary search using the previous amount of fuel tested and the current amount as lower and upper bounds
+
+The amount by which we increase our upper bound in step 2 is (somewhat) arbitrary. Given that we know some _approximate_ possible upper bounds from the
+examples, doubling at each step is mostly practical. If we increase _too_ quickly, the search space for step 3 becomes large. If we don't increase quickly
+enough, we spend a long time looking for an upper bound. For the final solution to problem two, we find the upper bound in 24 steps, leaving a decently
+sized space to search through for step 3. 
+
+During step 3, if our upper and lower bound are adjacent (like a lower bound of `10` and upper bound of `11`), or if the amount of fuel we can create
+for a given value being tested uses _exactly_ the amount of available `ORE`, we're done searching.
+
+Using the above steps encoded as [`maximize_fuel/4`](lib/aoc/day14#L21), the solution for problem two becomes:
+
+```elixir
+reactions_from_file("data/day14/problem_01.chems")
+|> maximize_fuel(1000000000000)
 ```
