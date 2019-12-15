@@ -35,6 +35,7 @@ Solution summaries:
  * [Day 12](#day-12) - ⭐️⭐️
  * [Day 13](#day-13) - ⭐️⭐️
  * [Day 14](#day-14) - ⭐️⭐️
+ * [Day 15](#day-15) - ⭐️⭐️
 
 Support modules:
 
@@ -1109,3 +1110,260 @@ Using the above steps encoded as [`maximize_fuel/4`](lib/aoc/day14#L21), the sol
 reactions_from_file("data/day14/problem_01.chems")
 |> maximize_fuel(1000000000000)
 ```
+
+
+## Day 15
+
+**Problem**: [Oxygen System](https://adventofcode.com/2019/day/15)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day15.ex](lib/aoc/day15.ex)
+
+**Tests**: No Tests
+
+**Hex Libraries**: [Chunky](https://hexdocs.pm/chunky/readme.html)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Path Finding, Maze Solving, Space Filling, Intcode
+
+Our Intcode virtual machine has become just another tool in our quest to get through space. Though the VM does feature today, it plays a
+background role to the real problem: our repair droid needs to map out a series of corridors. Sounds like a maze solving problem to me!
+
+With a combination of tools we built for our hull painting robot (namely the Grid code for tracking data on a 2 dimensional surface and the IO
+routines for interacting with a program running on the VM in a stateful way), we set out to guide our repair droid through unknown hallways,
+mapping as we go until we find the oxygen system. There are a ton of [maze solving](https://en.wikipedia.org/wiki/Maze_solving_algorithm)
+algorithms to choose from - but I have a feeling that the first question asking for the shortest path from our droid's start position to the
+oxygen system isn't the whole story. We want to map out _the entire_ map grid, and then find our shortest path. This is a variation on classic
+maze solving, in that we only uncover information about the maze as we navigate - no looking ahead, no full scans of the maze. 
+
+We'll use a robust, though somewhat slow, [wall following](https://en.wikipedia.org/wiki/Maze_solving_algorithm#Wall_follower) approach, which
+uses a simple heuristic to navigate around and discover the **entire** map:
+
+ 1. If we encounter a wall:
+  - turn left of right if the tile in either of those directions is unknown (bias to explore)
+  - If the tile to the right is a wall, turn left (don't get caught in a loop)
+  - otherwise turn left
+ 2. If we didn't encounter a wall:
+  - if the tile to the right is a wall, keep going forward
+  - if the tile to the right _isn't_ a wall, turn right
+
+With those simple steps, we quickly:
+
+```bash
+              ############### ####### ###########           
+              D..............#.......#...........#          
+                        .###.#.     .#.       .##           
+                        ...#.#.   ...#.   ... ...#          
+                          .###.   .###.   .#.   .#          
+                          ..... ...#... ...#.....#          
+                                .#.#.   .## ####.#          
+                              ...#.#.   .#.#.....#          
+                              .###.#.   .#.#.####           
+                              .#...#. ...#.#.#...#          
+                              .#####. .###.#.#.##           
+                              .....#. .#...#.#...#          
+                                  .#. .#.###.#.#.#          
+                                  ... .#.....#.#.#          
+                                      .#.#######.#          
+                                      .#.........#          
+                                      .#########.#          
+                                      .#.......#.#          
+                                      .#.#####.#.#          
+                                ... ...#.....#.#.#          
+                            ### .#. .###.###.###.#          
+                           #..@#.#...#.....#.#...#          
+                           #. # .#########.#.#.##           
+                           #. ...#.......#.#...#.#          
+                           #. .###.     .#.#####.#          
+                           #. .#... .....#...#...#          
+                           #. .#.   .#######.###.#          
+                           #. ...   .#.....#.....#          
+                           #.       .###.#######.#          
+                           #.   ... ...#.......#.#          
+                    ###    #.   .#.   .#.#.#####.#          
+                   #...#   #.   .#.....#.#.....#.#          
+                  ##. .#   #.   .#######.#####.#.#          
+                 #... .#   #.   .#.....#.#.#...#.#          
+                 #.   .#####.   .#####.#.#.#.###.#          
+                 #.   .......   .....#.#.#.#.....#          
+                 #.                 .#.#.#.######           
+                 #...   .......   ...#.#.#...#...#          
+                  ##.   .#####.   .###.#.#.#.#.#.#          
+                   #.....#.........#.......#...#S#          
+                    ##### ######### ####### ### #           
+```
+
+map out the entire maze:
+
+```
+          # ################# ####### ###########           
+         #.#.................#.......#...........#          
+         #.#.###########.###.#.#####.#.#######.##           
+         #.#...........#...#.#...#...#...#...#...#          
+         #.###########.###.###.###.###.###.#.###.#          
+         #...........#.#.#.....#...#...#...#.....#          
+         #.###.#####.#.#.#######.#.#.###.## ####.#          
+         #.#.#...#...#...#...#...#.#...#.#.#.....#          
+         #.#.###.#######.#.#.#.###.#.###.#.#.####           
+         #.#...#.#.....#.#.#.#.#...#.#...#.#.#...#          
+         #.###.#.#.###.#.#.#.#.#####.#.###.#.#.##           
+         #...#.#...#...#.#.#.#.....#.#.#...#.#...#          
+          ##.#.#####.###.#.#######.#.#.#.###.#.#.#          
+         #...#.#...#.....#.......#...#.#.....#.#.#          
+         #.###.#.#.#############.#####.#.#######.#          
+         #.#...#.#.........#...#.....#.#.........#          
+         #.#.#.#.#.#######.#.#.###.#.#.#########.#          
+         #.#.#...#.#.....#.#.#.....#.#.#.......#.#          
+         #.#######.#.#.###.#.#.#### ##.#.#####.#.#          
+         #.........#.#.......#.#...#...#.....#.#.#          
+          ##########.###########.#.#.###.###.###.#          
+         #...#.......#.....#..@#.#...#.....#.#...#          
+         #.#.#.#######.#####.###.#########.#.#.##           
+         #.#.#.#.#.........#.#...#.......#.#...#.#          
+         #.###.#.#.#######.#.#.###.#####.#.#####.#          
+         #.....#...#.....#.#.#.#...#.....#...#...#          
+         #.#####.###.###.#.#.#.#.###.#######.###.#          
+         #.#...#...#.#.#...#.#.....#.#.....#.....#          
+         #.#.###.###.#.###.#.#.#####.###.#######.#          
+         #.#.....#...#...#.#.#.#...#...#.......#.#          
+         #.#######.#####.#.#.#.#.#.###.#.#.#####.#          
+         #...#.....#...#...#.#.#.#.....#.#.....#.#          
+          ##.#.#.###.#.#.###.#.#.#######.#####.#.#          
+         #.#.#.#.#...#.#...#.#.#.#.....#.#.#...#.#          
+         #.#.#.###.###.#####.#.#.#####.#.#.#.###.#          
+         #.#.#...#.#.#.......#.#.....#.#.#.#.....#          
+         #.#.###.#.#.###########.###.#.#.#.######           
+         #.#...#.#...#.........#.#...#.#.#...#...#          
+         #.###.#.###.###.#####.###.###.#.#.#.#.#.#          
+         #.........#..D..#.........#.......#...#S#          
+          ######### ##### ######### ####### ### #           
+```
+
+Given that there are unreachable tiles on our map, it's hard to have a good heuristic for when we've completed
+exploration. Our maze solver uses a cycle timer - after `N` cycles of searching, it considers the map explored.
+For problem one, ~2,600 cycles was enough. With a map of our maze in hand (with `S` marking the oxygen sensor, and `@`
+our starting point), a [depth first search](https://en.wikipedia.org/wiki/Depth-first_search) of the map arrives
+at an optimal path quickly, starting with our point of origin (`@`):
+
+ 1. From current point:
+  1. If the current point is in the list of points already traveled, we've hit a loop. End this search path.
+  2. If the current point is the oxygen sensor, we've found a path. End this search path.
+  3. Othewise continue
+ 2. Find all neighbors that are valid moves (north, south, east, and west)
+ 3. Repat for each valid neighbor move
+
+This will find all valid paths from the origin to the finish - an extra step to filter out dead ends and loops, and sort
+for the shortest valid route, and we're done with problem one:
+
+```elixir
+route = run_droid()
+|> depth_search()
+```
+
+Looking at problem two, our intuition about building a complete map in problem one proves correct: we need a map of
+_every_ corridor so we can determine how long it will take to replace oxygen through the entire map. Given that problem
+one already generated all the map data we need, the solution for problem two is much easier. The method by which oxygen 
+spreads through the corridors (as described by the problem) is a [flood fill](https://en.wikipedia.org/wiki/Flood_fill):
+
+```bash
+          # ################# ####### ###########           
+         #.#.................#.......#...........#          
+         #.#.###########.###.#.#####.#.#######.##           
+         #.#...........#...#.#...#...#...#...#...#          
+         #.###########.###.###.###.###.###.#.###.#          
+         #...........#.#.#.....#...#...#...#.....#          
+         #.###.#####.#.#.#######.#.#.###.## ####.#          
+         #.#.#...#...#...#...#...#.#...#.#.#.....#          
+         #.#.###.#######.#.#.#.###.#.###.#.#.####           
+         #.#...#.#.....#.#.#.#.#...#.#...#.#.#...#          
+         #.###.#.#.###.#.#.#.#.#####.#.###.#.#.##           
+         #...#.#...#...#.#.#.#.....#.#.#...#.#...#          
+          ##.#.#####.###.#.#######.#.#.#.###.#.#.#          
+         #...#.#...#.....#.......#...#.#.....#.#.#          
+         #.###.#.#.#############.#####.#.#######.#          
+         #.#...#.#.........#...#.....#.#.........#          
+         #.#.#.#.#.#######.#.#.###.#.#.#########.#          
+         #.#.#...#.#.....#.#.#.....#.#.#.......#.#          
+         #.#######.#.#.###.#.#.#### ##.#.#####.#.#          
+         #.........#.#.......#.#...#...#.....#.#.#          
+          ##########.###########.#.#.###.###.###.#          
+         #...#.......#.....#..@#.#...#.....#.#...#          
+         #.#.#.#######.#####.###.#########.#.#.##           
+         #.#.#.#.#.........#.#...#.......#.#...#.#          
+         #.###.#.#.#######.#.#.###.#####.#.#####.#          
+         #.....#...#.....#.#.#.#...#.....#...#...#          
+         #.#####.###.###.#.#.#.#.###.#######.###.#          
+         #.#...#...#.#.#...#.#.....#.#OOOOO#.....#          
+         #.#.###.###.#.###.#.#.#####.###O#######.#          
+         #.#.....#...#...#.#.#.#...#...#OOOOOOO#.#          
+         #.#######.#####.#.#.#.#.#.###.#O#O#####.#          
+         #...#.....#...#...#.#.#.#.....#O#OOOOO#.#          
+          ##.#.#.###.#.#.###.#.#.#######O#####O#.#          
+         #.#.#.#.#D..#.#...#.#.#.#OOOOO#O#O#...#.#          
+         #.#.#.###.###.#####.#.#.#####O#O#O#.###.#          
+         #.#.#...#.#.#.......#.#.....#O#O#O#.....#          
+         #.#.###.#.#.###########.###.#O#O#O######           
+         #.#...#.#...#.........#.#...#O#O#OOO#OOO#          
+         #.###.#.###.###.#####.###.###O#O#O#O#O#O#          
+         #.........#.....#.........#OOOOOOO#OOO#O#          
+          ######### ##### ######### ####### ### #           
+```
+
+With a step counter and a few lookup and update functions, the fill works quickly:
+
+```bash
+          # ################# ####### ###########           
+         #.#OOOOOOOOOOOOOOOOO#OOOOOOO#OOOOOOOOOOO#          
+         #.#O###########O###O#O#####O#O#######O##           
+         #.#OOOOOOOOOOO#OOO#O#OOO#OOO#OOO#OOO#OOO#          
+         #O###########O###O###O###O###O###O#O###O#          
+         #OOOOOOOOOO.#O#O#OOOOO#OOO#OOO#OOO#OOOOO#          
+         #O###O#####.#O#O#######O#O#O###O## ####O#          
+         #.#.#OOO#...#OOO#...#OOO#O#OOO#O#O#OOOOO#          
+         #.#.###O#######O#.#.#O###O#O###O#O#O####           
+         #.#...#O#OOOOO#O#.#.#O#OOO#O#OOO#O#O#OOO#          
+         #.###.#O#O###O#O#.#.#O#####O#O###O#O#O##           
+         #...#.#OOO#OOO#O#.#.#OOOOO#O#O#OOO#O#OOO#          
+          ##.#.#####O###O#.#######O#O#O#O###O#O#O#          
+         #...#.#...#OOOOO#.......#OOO#O#OOOOO#O#O#          
+         #.###.#.#.#############.#####O#O#######O#          
+         #.#...#.#.........#...#.....#O#OOOOOOOOO#          
+         #.#.#.#.#.#######.#.#.###.#.#O#########O#          
+         #.#.#...#.#.....#.#.#.....#.#O#OOOOOOO#O#          
+         #.#######.#.#.###.#.#.#### ##O#O#####O#O#          
+         #.........#.#.......#.#OOO#OOO#OOOOO#O#O#          
+          ##########.###########O#O#O###O###O###O#          
+         #...#.......#.....#..@#O#OOO#OOOOO#O#OOO#          
+         #.#.#.#######.#####.###O#########O#O#O##           
+         #.#.#.#.#.........#.#OOO#OOOOOOO#O#OOO#O#          
+         #.###.#.#.#######.#.#O###O#####O#O#####O#          
+         #.....#...#.....#.#.#O#OOO#OOOOO#OOO#OOO#          
+         #.#####.###.###.#.#.#O#O###O#######O###O#          
+         #.#...#...#.#.#...#.#OOOOO#O#OOOOO#OOOOO#          
+         #.#.###.###.#.###.#.#O#####O###O#######O#          
+         #.#.....#...#...#.#.#O#OOO#OOO#OOOOOOO#O#          
+         #.#######.#####.#.#.#O#O#O###O#O#O#####O#          
+         #...#.....#OOO#...#.#O#O#OOOOO#O#OOOOO#O#          
+          ##.#.#.###O#O#.###.#O#O#######O#####O#O#          
+         #.#.#.#.#DOO#O#...#.#O#O#OOOOO#O#O#OOO#O#          
+         #.#.#.###O###O#####.#O#O#####O#O#O#O###O#          
+         #.#.#...#O#O#OOO....#O#OOOOO#O#O#O#OOOOO#          
+         #.#.###.#O#O###########O###O#O#O#O######           
+         #.#...#.#OOO#OOOOOOOOO#O#OOO#O#O#OOO#OOO#          
+         #.###.#.###O###O#####O###O###O#O#O#O#O#O#          
+         #.........#OOOOO#OOOOOOOOO#OOOOOOO#OOO#O#          
+          ######### ##### ######### ####### ### #           
+```
+
+And within a few hundred steps, the entire map is oxygenated. A bit more book-keeping work, and problem two is solved:
+
+```elixir
+%{maze: maze} = maze_state = run_droid()
+
+[{oxy_x, oxy_y}] = find_index(maze, "S")
+
+start_grid = maze |> Grid.put_at(oxy_x, oxy_y, "O")
+
+steps = oxygen_flood(%{maze_state | maze: start_grid})
+```
+

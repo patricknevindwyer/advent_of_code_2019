@@ -25,6 +25,15 @@ defmodule Aoc.Day15 do
         
     end
     
+    def problem01 do
+    
+        # run our droid until we're fairly certain we have a full map of the maze
+        route = run_droid()
+        |> depth_search()
+        
+        IO.puts("Min route length: #{length(route)}")
+    end
+    
     def find_index(grid, val) do
         0..grid.height - 1
         |> Enum.map(
@@ -114,16 +123,7 @@ defmodule Aoc.Day15 do
            end
        )
     end
-    
-    def problem01 do
-    
-        # run our droid until we're fairly certain we have a full map of the maze
-        route = run_droid()
-        |> depth_search()
         
-        IO.puts("Min route length: #{length(route)}")
-    end
-    
     def depth_search(maze_state) do
     
         IO.puts("running depth search")
@@ -306,13 +306,7 @@ defmodule Aoc.Day15 do
                   right_tile == "#" -> turn_left(updated_maze.droid)
                   true -> turn_left(updated_maze.droid)
               end
-              
-              # new_heading = if right_tile == "#" do
-              #     turn_left(updated_maze.droid)
-              # else
-              #     turn_right(updated_maze.droid)
-              # end
-              
+                            
               # droid didn't move. Mark the place we tried to move as a wall, and turn right 
               {
                   :continue,
