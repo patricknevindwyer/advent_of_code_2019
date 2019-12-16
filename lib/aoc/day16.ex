@@ -18,12 +18,18 @@ defmodule Aoc.Day16 do
        
         # take the first seven digits to be our eventual offset
         {message_offset, _} = signal |> String.slice(0..6) |> Integer.parse()
+        IO.puts("save message offset")
         
         # duplicate the message 10,000 times
         signal = signal |> String.duplicate(10_000)
+        IO.puts("build extended message")
         
-        # run the fft
-        fft(signal, 100)
+        # now slice off everything up to our message offset
+        signal = signal |> String.slice(message_offset, String.length(signal))
+        IO.puts("trimmed extended message")
+        
+        # run the fft with our subset pattern
+        fft(signal, 100, [1, 0, -1])
         
         # get the message at offset
         |> Enum.drop(message_offset - 1)
@@ -52,7 +58,7 @@ defmodule Aoc.Day16 do
     end
     
     def fft(num, repeat, pattern) when is_list(num) do
-        
+        IO.puts("Running fft on series(#{length(num)})")
         # build our FFT patterns, which is pre-computed for every offset
         patterns = 0..length(num)
         |> Enum.map(
@@ -60,15 +66,16 @@ defmodule Aoc.Day16 do
                 fft_pattern(pattern, index: phase, length: length(num))
             end
         )
-        
+        IO.puts("built pre-patterns")
         # now pass things on to the FFT itself
+        run_fft(num, repeat, patterns)
     end
     
     def run_fft(num, 0, _patterns) when is_list(num), do: num
     def run_fft(num, repeat, patterns) when is_list(num) do
-        
+        IO.puts("cycle: #{repeat}")
         # break apart our digits
-        fft_size = length(num)
+        # fft_size = length(num)
         
         result = num
         |> Enum.with_index()
@@ -76,7 +83,7 @@ defmodule Aoc.Day16 do
             fn {_digit, index} -> 
                 
                 # get our fft pattern
-                p = fft_pattern(pattern, index: index, length: fft_size)
+                p = patterns |> Enum.at(index)
                 
                 # zip our digits and phase indexed FFT together
                 Enum.zip(num, p)
@@ -88,7 +95,7 @@ defmodule Aoc.Day16 do
             end
         )
         
-        fft(result, repeat - 1, pattern)
+        run_fft(result, repeat - 1, patterns)
         
     end
     
