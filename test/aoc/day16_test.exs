@@ -52,19 +52,19 @@ defmodule AocTest.Day16 do
         end
     end
     
-    # describe "problem 02" do
-    #
-    #     test "example 01" do
-    #         assert decode_signal("03036732577212944063491565474664") == [8,4,4,6,2,0,2,6]
-    #     end
-    #
-    #     test "example 02" do
-    #         assert decode_signal("02935109699940807407585447034323") == [7,8,7,2,5,2,7,0]
-    #     end
-    #
-    #     test "example 03" do
-    #         assert decode_signal("03081770884921959731165446850517") == [5,3,5,5,3,7,3,1]
-    #     end
-    # end
+    describe "problem 02" do
+
+        test "example 01" do
+            assert decode_signal("03036732577212944063491565474664") == [8,4,4,6,2,0,2,6]
+        end
+
+        test "example 02" do
+            assert decode_signal("02935109699940807407585447034323") == [7,8,7,2,5,2,7,0]
+        end
+
+        test "example 03" do
+            assert decode_signal("03081770884921959731165446850517") == [5,3,5,5,3,7,3,1]
+        end
+    end
     
 end

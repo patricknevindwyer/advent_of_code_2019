@@ -6,6 +6,14 @@ defmodule Aoc.Day16 do
     
     """ 
     
+    def problem02 do
+        "data/day16/problem01.data"
+        |> File.read!()
+        |> String.trim()
+        |> decode_signal()
+        |> Enum.take(8)
+    end
+    
     def problem01 do
        "data/day16/problem01.data" 
        |> File.read!()
@@ -18,21 +26,17 @@ defmodule Aoc.Day16 do
        
         # take the first seven digits to be our eventual offset
         {message_offset, _} = signal |> String.slice(0..6) |> Integer.parse()
-        IO.puts("save message offset")
         
         # duplicate the message 10,000 times
         signal = signal |> String.duplicate(10_000)
-        IO.puts("build extended message")
         
         # now slice off everything up to our message offset
         signal = signal |> String.slice(message_offset, String.length(signal))
-        IO.puts("trimmed extended message")
         
         # run the fft with our subset pattern
-        fft(signal, 100, [1, 0, -1])
+        part_two_fft(signal, 100)
         
         # get the message at offset
-        |> Enum.drop(message_offset - 1)
         |> Enum.take(8)
         
     end
@@ -51,6 +55,20 @@ defmodule Aoc.Day16 do
             end
         )
         |> fft(repeat, pattern)
+    end
+    
+    def part_two_fft(num, repeat) when is_binary(num) do
+        num
+        |> String.split("")
+        |> Enum.slice(1..String.length(num))
+        |> Enum.map(
+            fn s_digit -> 
+                {v, _} = Integer.parse(s_digit)
+                v
+            end
+        )
+        |> part_two_fft(repeat)
+        
     end
     
     def fft(num, repeat, pattern) when is_integer(num) do
@@ -74,7 +92,7 @@ defmodule Aoc.Day16 do
     
     def run_fft(num, 0, _pattern) when is_list(num), do: num
     def run_fft(num, repeat, pattern) when is_list(num) do
-        IO.puts("cycle: #{repeat}")
+        
         # break apart our digits
         # fft_size = length(num)
         
@@ -102,7 +120,7 @@ defmodule Aoc.Day16 do
     
     def alt_run_fft(num, 0, _pattern) when is_list(num), do: num
     def alt_run_fft(num, repeat, pattern) when is_list(num) do
-        IO.puts("alt cycle: #{repeat}")
+        
         result = num
         |> Enum.with_index()
         |> Enum.map(
@@ -110,12 +128,13 @@ defmodule Aoc.Day16 do
                 # zip our digits and phase indexed FFT together
                 num
                 |> Enum.with_index()
-                |> Enum.map(
-                    fn {a_d, a_idx} -> 
-                        a_d * fft_pattern_digit_at(pattern, a_idx, index: index)
+                |> Enum.reduce(
+                    0,
+                    fn {a_d, a_idx}, acc -> 
+                        
+                        acc + (a_d * fft_pattern_digit_at(pattern, a_idx, index: index))
                     end
                 )                
-                |> Enum.sum()
                 |> Integer.digits()
                 |> List.last()
                 |> abs()
@@ -124,6 +143,22 @@ defmodule Aoc.Day16 do
         
         alt_run_fft(result, repeat - 1, pattern)
         
+    end
+    
+    def part_two_fft(num, 0), do: num
+    def part_two_fft(num, repeat) do
+        result = num 
+        |> tail_sum()
+        |> Enum.map(fn v -> 
+            v |> Integer.digits() |> List.last() |> abs()
+        end)
+        part_two_fft(result, repeat - 1)
+    end
+    
+    def tail_sum([v]), do: [v]
+    def tail_sum([head | tail]) do
+        rest = tail_sum(tail)
+        [head + List.first(rest)] ++ rest
     end
     
     def fft_pattern_digit_at(pattern, digit, opts \\ []) do
