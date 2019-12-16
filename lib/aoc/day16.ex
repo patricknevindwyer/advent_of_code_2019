@@ -58,21 +58,22 @@ defmodule Aoc.Day16 do
     end
     
     def fft(num, repeat, pattern) when is_list(num) do
-        IO.puts("Running fft on series(#{length(num)})")
-        # build our FFT patterns, which is pre-computed for every offset
-        patterns = 0..length(num)
-        |> Enum.map(
-            fn phase -> 
-                fft_pattern(pattern, index: phase, length: length(num))
-            end
-        )
-        IO.puts("built pre-patterns")
+        # IO.puts("Running fft on series(#{length(num)})")
+        
+        # build our FFT # patterns, which is pre-computed for every offset
+#         patterns = 0..length(num)
+#         |> Enum.map(
+#             fn phase ->
+#                 fft_pattern(pattern, index: phase, length: length(num))
+#             end
+#         )
+#         IO.puts("built pre-patterns")
         # now pass things on to the FFT itself
-        run_fft(num, repeat, patterns)
+        alt_run_fft(num, repeat, pattern)
     end
     
-    def run_fft(num, 0, _patterns) when is_list(num), do: num
-    def run_fft(num, repeat, patterns) when is_list(num) do
+    def run_fft(num, 0, _pattern) when is_list(num), do: num
+    def run_fft(num, repeat, pattern) when is_list(num) do
         IO.puts("cycle: #{repeat}")
         # break apart our digits
         # fft_size = length(num)
@@ -83,7 +84,7 @@ defmodule Aoc.Day16 do
             fn {_digit, index} -> 
                 
                 # get our fft pattern
-                p = patterns |> Enum.at(index)
+                p = fft_pattern(pattern, index: index, length: length(num)) #patterns |> Enum.at(index)
                 
                 # zip our digits and phase indexed FFT together
                 Enum.zip(num, p)
@@ -95,7 +96,71 @@ defmodule Aoc.Day16 do
             end
         )
         
-        run_fft(result, repeat - 1, patterns)
+        run_fft(result, repeat - 1, pattern)
+        
+    end
+    
+    def alt_run_fft(num, 0, _pattern) when is_list(num), do: num
+    def alt_run_fft(num, repeat, pattern) when is_list(num) do
+        IO.puts("alt cycle: #{repeat}")
+        result = num
+        |> Enum.with_index()
+        |> Enum.map(
+            fn {_digit, index} -> 
+                # zip our digits and phase indexed FFT together
+                num
+                |> Enum.with_index()
+                |> Enum.map(
+                    fn {a_d, a_idx} -> 
+                        a_d * fft_pattern_digit_at(pattern, a_idx, index: index)
+                    end
+                )                
+                |> Enum.sum()
+                |> Integer.digits()
+                |> List.last()
+                |> abs()
+            end
+        )
+        
+        alt_run_fft(result, repeat - 1, pattern)
+        
+    end
+    
+    def fft_pattern_digit_at(pattern, digit, opts \\ []) do
+        phase_index = opts |> Keyword.get(:index, 0)
+        
+        # the cycle size is how big each repetition of our pattern is (1, 0, -1 vs 1, 1, 0, 0, -1, -1)
+        cycle_size = length(pattern) * (phase_index + 1)
+        
+        if digit < (cycle_size - 1) do
+            # in the first cycle. we need trim a digit to figure out where we
+            # are, as our first cycle series drops a digit
+            if digit < (phase_index + 1) do
+                
+                if digit < phase_index do
+                    pattern |> Enum.at(0)
+                else
+                    pattern |> Enum.at(1)
+                end
+            else 
+                digit = digit - phase_index
+                p_offset = div(digit, (phase_index + 1))
+                pattern |> Enum.at(p_offset + 1)
+            end
+            
+        else
+            # in a later cycle
+            
+            # this is which value in the specific cycle we're using, offset for the first cycle being wonky
+            digit = max(0, digit - (cycle_size - 1))
+            inter_cycle_offset = rem(digit, cycle_size)
+        
+            # now we figure out which digit that is
+            p_offset = div(inter_cycle_offset, phase_index + 1)
+        
+            # IO.puts("digit(#{digit}) phase(#{phase_index}) cycle size(#{cycle_size}) inter cycle(#{inter_cycle_offset}) digit_offset(#{p_offset})")
+            pattern |> Enum.at(p_offset)
+        end
         
     end
     
@@ -116,7 +181,7 @@ defmodule Aoc.Day16 do
 
     def repeat_digit(_d, 0), do: []    
     def repeat_digit(d, t) do
-        [d] ++ repeat_digit(d, t - 1)
+        repeat_digit(d, t - 1) ++ [d]
     end
     
     def extend_pattern(p, len) when is_list(p) and length(p) >= len, do: p
