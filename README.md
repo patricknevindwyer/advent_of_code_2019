@@ -21,25 +21,26 @@ code for each day can be found in [`test/aoc`](test/aoc).
 
 Solution summaries:
 
- * [Day 01](#day-01) - ⭐️⭐️
- * [Day 02](#day-02) - ⭐️⭐️
- * [Day 03](#day-03) - ⭐️⭐️
- * [Day 04](#day-04) - ⭐️⭐️
- * [Day 05](#day-05) - ⭐️⭐️
- * [Day 06](#day-06) - ⭐️⭐️
- * [Day 07](#day-07) - ⭐️⭐️
- * [Day 08](#day-08) - ⭐️⭐️
- * [Day 09](#day-09) - ⭐️⭐️
- * [Day 10](#day-10) - ⭐️⭐️
- * [Day 11](#day-11) - ⭐️⭐️
- * [Day 12](#day-12) - ⭐️⭐️
- * [Day 13](#day-13) - ⭐️⭐️
- * [Day 14](#day-14) - ⭐️⭐️
- * [Day 15](#day-15) - ⭐️⭐️
+ * [Day 01](#day-01) - ⭐️⭐️ - The Tyranny of the Rocket Equation
+ * [Day 02](#day-02) - ⭐️⭐️ - 1202 Program Alarm
+ * [Day 03](#day-03) - ⭐️⭐️ - Crossed Wires
+ * [Day 04](#day-04) - ⭐️⭐️ - Secure Container
+ * [Day 05](#day-05) - ⭐️⭐️ - Sunny with a Chance of Asteroids
+ * [Day 06](#day-06) - ⭐️⭐️ - Universal Orbit Map
+ * [Day 07](#day-07) - ⭐️⭐️ - Amplification Circuit
+ * [Day 08](#day-08) - ⭐️⭐️ - Space Image Format
+ * [Day 09](#day-09) - ⭐️⭐️ - Sensor Boost
+ * [Day 10](#day-10) - ⭐️⭐️ - Monitoring Station
+ * [Day 11](#day-11) - ⭐️⭐️ - Space Police
+ * [Day 12](#day-12) - ⭐️⭐️ - The N-Body Problem
+ * [Day 13](#day-13) - ⭐️⭐️ - Care Package
+ * [Day 14](#day-14) - ⭐️⭐️ - Space Stoichiometry
+ * [Day 15](#day-15) - ⭐️⭐️ - Oxygen System
+ * [Day 16](#day-16) - ⭐️⭐️ - Flawed Frequency Transmission
 
 Support modules:
 
- * [Intcode VM](lib/aoc/intcode.ex) - Updated Intcode Virtual Machine, with support, IO, and program functions
+ * [Intcode VM](lib/aoc/intcode.ex) - Up-to-date Intcode Virtual Machine, with support, IO, and program functions
 
 
 ## Day 01
@@ -1366,4 +1367,95 @@ start_grid = maze |> Grid.put_at(oxy_x, oxy_y, "O")
 
 steps = oxygen_flood(%{maze_state | maze: start_grid})
 ```
+
+
+## Day 16
+
+**Problem**: [Flawed Frequency Transmission](https://adventofcode.com/2019/day/16)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day16.ex](lib/aoc/day16.ex)
+
+**Tests**: [day16_test.exs](test/aoc/day16_test.exs)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, List Manipulation, FFT
+
+Oh joy! Fast Fourier Transforms! I mean _Flawed Frequency Transmissions_! 
+
+The concept is the same, though. For problem one a handful of simple methods to do some matrix math like operations
+across an input signal, repeat a few times, and we're done. That seems _too easy_. Especially coming off of a long
+maze solving problem from yesterday, 10 minutes of throwing together list manipulations seems like we're missing
+something. None of the premonitions of previous days, where a lucky choice algorithmically in the first problem
+sets up an optimal solution to the second. Nope. Problem one has a solution with a rather nasty set of nested (and then
+_repeated_) loops, with the core of the solution in the reduction/accumulation:
+
+```elixir
+    |> Enum.reduce(
+        0,
+        fn {a_d, a_idx}, acc -> 
+            acc + (a_d * fft_pattern_digit_at(pattern, a_idx, index: index))
+        end
+    )                
+```
+
+Even with a relatively small input for 100 iterations of our `fft`, this takes awhile. The original solution for
+problem one (prior to trying to troubleshoot problem two) was even more time inefficient; it created new lists of
+phase digits (long lists, at that) in the inner loop, for every single iteration. The `fft_pattern_digit_at/3`
+function is a short-cut: a constant time, constant space closed form interpolation of the current FFT digit and
+phase index into a _phase multiplier_. It's like taking the long list of phase digits, and generating them one
+at a time, only as needed. The overhead of calling a function is added, but we save the expense of building 
+long lists _over and over_, as well as the linear time required to look up values in those generated lists.
+
+And that optimization wasn't nearly enough to make problem two tractable. I _knew_ problem one seemd too easy. With
+a _much_ longer signal (a bit over 6 _million_ digits), even a highly optimized direct "fft" of the signal would
+still require 6.5 million<sup>2</sup> add/multiply operations - brute forcing an optimized solution would still
+take hours to run. That's just not going to work.
+
+A careful reading of the statement for problem two (and a bit of poking around on [Reddit](https://www.reddit.com/r/adventofcode/) to verify some assumptions), we can bypass our solution to problem one entirely. It all comes down to two factors:
+
+ 1. The final answer for our problem involves a series of 8 digits _in the middle of the signal_
+ 2. The first digit of our phase pattern is `0`
+
+The reason these two factors matter, is that when combined we realize that when we're calculating the value
+of the digits at (and after) the message offset into our signal, _all of the previous digits will be multiplied
+by zero_. By the time we get to the message offset, our _phase pattern_ will consist of a list of zeros, ones, zeros
+and negatives ones, each as long as the message offset (given the rules earlier in the problem on how to build and
+repeat the phase pattern). Through a bit of induction, we discover that we can skip calculating _anything_ about all
+of the digits before the message offset.
+
+This alone doesn't lead to an optimal solution, though. Just dropping half of the input signal still leaves _a lot_ of
+digits. Too many to run a full "fft" on in any reasonable time. But - just like the insight about all of the zeros _before_
+the message offset, we can look at what is in the phase pattern _after_ the message offset. It turns out that, because of
+_where_ in the signal we're calculating, all of the multiplications we do for the rest of the signal will be a signal value
+multiplied by `1`. That's something we can skip! If our original formula for working with each digit looked like:
+
+```
+signal_digit_0 * phase_digit_0 + signal_digit_1 * phase_digit_1 + signal_digit_2 * phase_digit_2 + ...
+```
+
+for problem two it now looks like:
+
+```
+signal_digit_0 + signal_digit_1 + signal_digit_2 + ...
+```
+
+That's a _lot_ less work. In fact, calculating each pass of our "fft" is now reduced to running a _tail summation_ against
+the signal. For a tail summation, we calculate the new value at any position in the signal list by adding the value currently
+at that position, with all of the values that occur _after_ it in the list. So a list that starts out as `[1, 2, 3, 4]` becomes `[10, 9, 7, 4]`, 
+with each value in the new list being the sum of itself, and all following values from the previous list. This is great! The
+`O(N*N*k)` "fft" required for a solution to problem one can be reduced in problem two into:
+
+```elixir
+result = num 
+|> tail_sum()
+|> Enum.map(fn v -> 
+    v |> Integer.digits() |> List.last() |> abs()
+end)
+```
+
+That's a `O(2N)` set of operations per FFT repetition. Even that isn't optimal, but it does get the job done.
+
+
+
 

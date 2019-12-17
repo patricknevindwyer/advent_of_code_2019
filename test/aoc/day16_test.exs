@@ -6,18 +6,18 @@ defmodule AocTest.Day16 do
     describe "utilities" do
        
        test "fft_pattern/2" do
-           
+
            assert fft_pattern([0, 1, 0, -1], index: 0, length: 3) == [1, 0, -1]
            assert fft_pattern([0, 1, 0, -1], index: 1, length: 9) == [0, 1, 1, 0, 0, -1, -1, 0, 0]
            assert fft_pattern([0, 1, 0, -1], index: 2, length: 24) == [0, 0, 1, 1, 1, 0, 0, 0, -1, -1, -1, 0, 0, 0, 1, 1, 1, 0, 0, 0, -1, -1, -1, 0]
-           
-       end 
-       
+
+       end
+
        test "repeat_digit/2" do
            assert repeat_digit(1, 1) == [1]
            assert repeat_digit(3, 4) == [3, 3, 3, 3]
        end
-       
+
        test "extend_pattern/2" do
            assert extend_pattern([1, 2, 3], 3) == [1, 2, 3]
            assert extend_pattern([1, 2, 3], 4) == [1, 2, 3, 1, 2, 3]
