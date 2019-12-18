@@ -12,6 +12,11 @@ defmodule Aoc.Intcode do
      - `output_function` - Function with arity 2 (state, outputs) that returns a new state
      - `input_function` - Function with arity 1 that returns a value to send to the Intcode VM
     
+    ## Input Function
+    
+    The input function can return either a singular integer value, or a tuple of `{int, state}`
+    to modify the ongoing state.
+    
     """
     def await_io(state, opts \\ []) do
         output_count = opts |> Keyword.get(:output_count, 1)
@@ -38,11 +43,15 @@ defmodule Aoc.Intcode do
             
             # we've got an input request
             {:input, dest} -> 
+                                
+                {iv, new_state} = case input_function.(state) do
+                   {iv_value, updated_state} -> {iv_value, updated_state}
+                   value -> {value, state} 
+                end
                 
-                iv = input_function.(state)
                 send(dest, {:input, iv})
 
-                await_io_handle(output_list, state, opts)
+                await_io_handle(output_list, new_state, opts)
             
             # we got an output - what should we do?
             v -> 

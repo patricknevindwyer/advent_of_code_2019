@@ -37,6 +37,7 @@ Solution summaries:
  * [Day 14](#day-14) - ⭐️⭐️ - Space Stoichiometry
  * [Day 15](#day-15) - ⭐️⭐️ - Oxygen System
  * [Day 16](#day-16) - ⭐️⭐️ - Flawed Frequency Transmission
+ * [Day 17](#day-17) - ⭐️⭐️ - Set and Forget
 
 Support modules:
 
@@ -1457,5 +1458,116 @@ end)
 That's a `O(2N)` set of operations per FFT repetition. Even that isn't optimal, but it does get the job done.
 
 
+## Day 17
 
+**Problem**: [Set and Forget](https://adventofcode.com/2019/day/17)
 
+**Stars**: ⭐️⭐️
+
+**Code**: [day17.ex](lib/aoc/day17.ex)
+
+**Tests**: No Tests
+
+**Hex Libraries**: [Chunky](https://hexdocs.pm/chunky/readme.html)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Recusion, Path Finding, Maze Solving, Space Filling, Intcode, LZ77, Compression
+
+The first half of Day 17 seems a lot like the maze finding/drawing problem from Day 15. In fact, so similar that a few minor tweaks to the code, and we're
+able to draw the scaffolding map. Altering our code to capture the map output data, we get:
+
+```
+ ..........####^..............................
+ ..........#..................................
+ ..........#..................................
+ ..........#..................................
+ ..........#######............................
+ ................#............................
+ ................#.......#############........
+ ................#.......#...........#........
+ #######.........#.......#...........#........
+ #.....#.........#.......#...........#........
+ #.....#.........#.#####.#.....#########......
+ #.....#.........#.#...#.#.....#.....#.#......
+ #.....#.......###########.###########.#......
+ #.....#.......#.#.#...#...#...#.......#......
+ #.....#.......#.#######...#...#.......#......
+ #.....#.......#...#.......#...#.......#......
+ #.....#.###########.###########.......#......
+ #.....#.#.....#.....#.....#...........#......
+ #.....#########.....#.....#...........#......
+ #.......#...........#.....#...........#......
+ #######.#...........#.....#######.....#######
+ ......#.#...........#...........#...........#
+ ......#.#############...........#...........#
+ ......#.........................#...........#
+ ......#.........................#...........#
+ ......#.........................#...........#
+ ......#.........................#...........#
+ ......#.........................#...........#
+ ......#.........................#.###########
+ ......#.........................#.#..........
+ ......#######...................#######......
+ ..................................#...#......
+ ..................................#...#......
+ ..................................#...#......
+ ..................................#####......
+
+```
+
+For problem one we need to count loops (or intersections) in the scaffolding. This is fairly easy is we scan through the entire map, looking
+for any scaffolding point that has **four cardinal** neighbors that are also scaffolding, like the scaffolding piece marked `A` below:
+
+```
+ .#.
+ #A#
+ .#.
+```
+
+Finding all of those, and doing some simple math gets a quick solution to problem one.
+
+Problem two is a bit odd at first glance. We have limited space to provide an input program, in a very specific format. At first I got
+stuck on an ambiguity in the problem statement, and a resulting bug in my code: when providing an instruction like "turn right, move 10 spaces" the
+code provided to the VM looks like `R10`. Given the problem statement, every character should be separated by a comma, which would look like `R,1,0`.
+But this means the bot turns right, moves one, moves zero. That's not what we wanted! It wasn't immediately clear to me that the problem statement
+_meant_ that you could provide input like `R,10,...` and that it would be handled correctly. This left me in a loop (ha) of my own, trying to
+figure out how to get a proper path for the bot.
+
+The solution for problem two hinges on recognizing that a fully plotted out route for the bot will have a lot of repeating patterns. For my
+puzzle inputs, the full path of the bot looks like:
+
+```
+L4 L4 L6 R10 L6 L4 L4 L6 R10 L6 L12 L6 R10 L6 R8 R10 L6 R8 R10 L6 L4 L4 L6 R10 L6 R8 R10 L6 L12 L6 R10 L6 R8 R10 L6 L12 L6 R10 L6
+```
+
+Had I not gotten stuck on the input bugs, this would have been an excellent time to write a modified [LZ77 Deflate](https://en.wikipedia.org/wiki/LZ77_and_LZ78) algorithm. The problem statement for the second half of Day 17 sets up the idea well:
+find a subset of 3 programs that, when chainged together repeatedly, make the bot travel the entire path of the scaffolding. If you recognize
+that we're looking at repeated patterns, and know (even roughly) about dictionary compression, this is a tractable problem.
+
+If you take the path for this bot, and substitute each unique move combination (like `L4`) for a letter, you get:
+
+```
+q  q  w  e  w  q  q  w  e  w  r  w  e  w  t  e  w  t  e  w  q  q  w  e  w  t  e  w  r  w  e  w  t  e  w  r  w  e  w
+```
+
+Now the repetition starts to stand out. Making the patterns even clearer:
+
+```
+q  q  w  e  w
+q  q  w  e  w
+r  w  e  w
+t  e  w
+t  e  w
+q  q  w  e  w
+t  e  w
+r  w  e  w
+t  e  w
+r  w  e  w
+```
+
+That looks like three subprograms. If it wasn't already 10PM when I had time to dig into problem two, and the input bugs hand't burned an hour, I
+would write an auto-solver for this:
+
+ - Trace the needed moves given the scaffolding map (move til hit a wall, turn left or right as available, repeat)
+ - Write a modified (and simple) LZ77 compressor. Limiting max run length to meet our program requirements means there are only a handful of solutions
+ 
+But. It's 10:30 at night. I hand solved the move packing, as that was quicker.
