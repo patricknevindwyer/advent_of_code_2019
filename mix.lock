@@ -1,3 +1,3 @@
 %{
-  "chunky": {:hex, :chunky, "0.6.1", "1f2639e7ccf38a916134db7aff516819be17ed35c337036210821ef44e266d00", [:mix], [], "hexpm"},
+  "chunky": {:hex, :chunky, "0.6.3", "6e47fc8c94ef8ad051859402c503dd7ad9e8fbf94235ffc4c1c68a057ec7b6ce", [:mix], [], "hexpm"},
 }
