@@ -1,3 +1,4 @@
 %{
   "chunky": {:hex, :chunky, "0.6.3", "6e47fc8c94ef8ad051859402c503dd7ad9e8fbf94235ffc4c1c68a057ec7b6ce", [:mix], [], "hexpm"},
+  "eastar": {:hex, :eastar, "0.5.1", "5d610705db8e7e9287e02bf1b1ee7013c2744e04380acf914590749dbcb3e8d5", [:mix], [], "hexpm"},
 }

@@ -21,7 +21,8 @@ defmodule Aoc2019.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-        {:chunky, "~> 0.6.3"}
+        {:chunky, "~> 0.6.3"},
+        {:eastar, "~> 0.5.1"}
     ]
   end
 end
