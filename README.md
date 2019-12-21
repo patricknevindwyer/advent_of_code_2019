@@ -40,7 +40,8 @@ Solution summaries:
  * [Day 17](#day-17) - ⭐️⭐️ - Set and Forget
  * [Day 18](#day-18) -  - Many Worlds Interpretation
  * [Day 19](#day-19) - ⭐️⭐️ - Tractor Beam
- * [Day 20](#day-20) - ⭐️ - Donut Maze
+ * [Day 20](#day-20) - ⭐️⭐️ - Donut Maze
+ * [Day 21](#day-21) - ⭐️⭐️ - Springdroid Adventure
  
 
 Support modules:
@@ -1706,7 +1707,7 @@ than the naive scanning solution, which would have scanned nearly a million loca
 
 **Problem**: [Donut Maze](https://adventofcode.com/2019/day/20)
 
-**Stars**: ⭐️
+**Stars**: ⭐️⭐️
 
 **Code**: [day20.ex](lib/aoc/day20.ex)
 
@@ -1716,4 +1717,18 @@ than the naive scanning solution, which would have scanned nearly a million loca
 
 **Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), A* Search, Maze, Recursion
 
+
+## Day 21
+
+**Problem**: [Springdroid Adventure](https://adventofcode.com/2019/day/21)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day21.ex](lib/aoc/day21.ex)
+
+**Tests**: [day21_test.exs](test/aoc/day21_test.exs)
+
+**Hex Libraries**: -
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Intcode, Assembly, Platforming
 
