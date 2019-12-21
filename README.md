@@ -40,6 +40,7 @@ Solution summaries:
  * [Day 17](#day-17) - ⭐️⭐️ - Set and Forget
  * [Day 18](#day-18) -  - Many Worlds Interpretation
  * [Day 19](#day-19) - ⭐️⭐️ - Tractor Beam
+ * [Day 20](#day-20) - ⭐️ - Donut Maze
  
 
 Support modules:
@@ -1699,3 +1700,20 @@ function uses some additional heuristics to speed up the search:
 There are more optimal ways to scan for the beam - this one takes 55 steps to get to the solution for problem two. That's still better
 than the naive scanning solution, which would have scanned nearly a million locations.
  
+
+
+## Day 20
+
+**Problem**: [Donut Maze](https://adventofcode.com/2019/day/20)
+
+**Stars**: ⭐️
+
+**Code**: [day20.ex](lib/aoc/day20.ex)
+
+**Tests**: [day20_test.exs](test/aoc/day20_test.exs)
+
+**Hex Libraries**: [Chunky](https://hexdocs.pm/chunky/readme.html), [EAStar](https://hexdocs.pm/eastar/Astar.html)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), A* Search, Maze, Recursion
+
+
