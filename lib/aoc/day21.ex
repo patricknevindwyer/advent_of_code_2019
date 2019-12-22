@@ -7,7 +7,6 @@ defmodule Aoc.Day21 do
     """ 
     
     alias Aoc.Intcode
-    alias Chunky.Grid
         
     def problem01 do
         
