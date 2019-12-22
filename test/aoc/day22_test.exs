@@ -27,6 +27,28 @@ defmodule AocTest.Day22 do
        
     end
     
+    describe "single track techniques" do
+        test "deal new stack" do
+            assert tech_s_new_stack(10, 2) == 7
+        end
+        
+        test "cut - positive - before" do
+            assert tech_s_cut(10, 3, 1) == 8
+        end
+        
+        test "cut - positive - after" do
+            assert tech_s_cut(10, 3, 6) == 3
+        end
+        
+        test "cut - negative - before" do
+            assert tech_s_cut(10, -4, 1) == 5
+        end
+        
+        test "cut - negative - after" do
+            assert tech_s_cut(10, -4, 8) == 2
+        end
+    end
+    
     describe "shuffles" do
         @deck [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         

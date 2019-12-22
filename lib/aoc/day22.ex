@@ -18,6 +18,16 @@ defmodule Aoc.Day22 do
         shuffled |> Enum.find_index(fn v -> v == 2019 end)
     end
     
+    def problem02 do
+       
+        "data/day22/problem_01.shuffle"
+        |> File.read!()
+        |> parse_shuffle()
+        |> run_modulo_techs(119315717514047, 101741582076661, 2020)
+       
+       # 93750418158025 
+    end
+    
     @doc """
     Generate a factory sized deck of a specific size
     """
@@ -41,12 +51,89 @@ defmodule Aoc.Day22 do
     def run_tech({:deal_increment, inc}, cards), do: tech_deal(cards, inc)
     def run_tech({:cut, c}, cards), do: tech_cut(cards, c)
     
+    
+    # https://www.reddit.com/r/adventofcode/comments/ee0rqi/2019_day_22_solutions/fbqs5bk/
+    def run_modulo_techs(techs, deck_size, iterations, card_loc) do
+       
+       # reverse the calcs, and run
+       {o_m, i_m} = techs
+       |> Enum.reverse()
+       |> run_modulo_techs_iter(deck_size, iterations, card_loc) 
+       
+       # run final modulo math
+       # inv = lambda x: pow(x, c-2, c)
+       # o *= inv(1-i); i = pow(i, n, c)
+       IO.puts("pre-I: #{i_m}")
+       o_m = o_m * mod_pow(1 - i_m, deck_size - 2, deck_size)
+       i_m = mod_pow(i_m, iterations, deck_size) # here's our problem - erlang's :crypto.mod_pow overflows, and we get an improper result
+       
+       IO.puts("O: #{o_m}")
+       IO.puts("I: #{i_m}")
+       # return (p*i + (1-i)*o) % c
+       rem(
+           (
+               (card_loc * i_m) + ((1 - i_m) * o_m)
+           ), 
+           deck_size
+       )
+    end
+    
+    def run_modulo_techs_iter([], _deck_size, _iterations, _card_loc), do: {0, 1}
+    def run_modulo_techs_iter([tech|techs], deck_size, iterations, card_loc) do
+        run_modulo_tech(
+            tech, 
+            deck_size, 
+            iterations, 
+            card_loc, 
+            run_modulo_techs_iter(techs, deck_size, iterations, card_loc)
+        )
+    end
+    
+    def run_modulo_tech({:deal_stack}, _deck_size, _iterations, _card_loc, {o_m, i_m}) do
+        # o -= i; i *= -1
+        {
+            o_m - i_m,
+            i_m * -1
+        }
+    end
+    
+    def run_modulo_tech({:deal_increment, inc}, deck_size, _iterations, _card_loc, {o_m, i_m}) do
+        # inv = lambda x: pow(x, c-2, c) 
+        # i *= inv(int(s[-1]))  
+        {
+            o_m,
+            i_m * mod_pow(inc, deck_size - 2, deck_size)
+        }
+    end
+    
+    def run_modulo_tech({:cut, break}, _deck_size, _iterations, _card_loc, {o_m, i_m}) do
+        #   o += i * int(s[-1])
+        {
+            o_m + (i_m * break),
+            i_m
+        }
+    end
+    
+    defp mod_pow(x, n, c) do
+       :crypto.mod_pow(x, n, c) |> :binary.decode_unsigned()
+    end
+    
     @doc """
     Deal as a new card stack
     """
     def tech_new_stack(cards) do
         cards |> Enum.reverse()
     end
+    
+    # @doc """
+    # Track a specific card location through a new stack deal.
+    #
+    # For a new stack, our card location will change to count backwards from
+    # where it currently is in the deck.
+    # """
+    # def tech_s_new_stack(deck_size, card_loc) do
+    #     (deck_size - 1) - card_loc
+    # end
     
     @doc """
     Cut the deck of cards
@@ -55,6 +142,25 @@ defmodule Aoc.Day22 do
         {a, b} = cards |> Enum.split(break)
         b ++ a
     end
+    
+    # @doc """
+   #  Cut the deck of cards by tracking a specific card location through
+   #  a stack cut
+   #  """
+   #  def tech_s_cut(deck_size, break, card_loc) do
+   #      # convert the break to a positive number
+   #      break = if break < 0 do
+   #          deck_size + break
+   #      else
+   #          break
+   #      end
+   #
+   #      cond do
+   #          card_loc < break -> card_loc + (deck_size - break)
+   #          card_loc == break -> 0
+   #          card_loc > break -> card_loc - break
+   #      end
+   #  end
     
     @doc """
     Do an offset shuffle
@@ -66,7 +172,7 @@ defmodule Aoc.Day22 do
         |> Enum.map(fn {c, _idx} -> c end)
         
     end
-    
+        
     @doc """
     Parse a shuffle from a string of techniques.
     """
