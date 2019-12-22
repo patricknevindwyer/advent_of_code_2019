@@ -42,6 +42,7 @@ Solution summaries:
  * [Day 19](#day-19) - ⭐️⭐️ - Tractor Beam
  * [Day 20](#day-20) - ⭐️⭐️ - Donut Maze
  * [Day 21](#day-21) - ⭐️⭐️ - Springdroid Adventure
+ * [Day 22](#day-22) - ⭐️⭐️ - Slam Shuffle
  
 
 Support modules:
