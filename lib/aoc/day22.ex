@@ -124,17 +124,7 @@ defmodule Aoc.Day22 do
     def tech_new_stack(cards) do
         cards |> Enum.reverse()
     end
-    
-    # @doc """
-    # Track a specific card location through a new stack deal.
-    #
-    # For a new stack, our card location will change to count backwards from
-    # where it currently is in the deck.
-    # """
-    # def tech_s_new_stack(deck_size, card_loc) do
-    #     (deck_size - 1) - card_loc
-    # end
-    
+        
     @doc """
     Cut the deck of cards
     """
@@ -142,26 +132,7 @@ defmodule Aoc.Day22 do
         {a, b} = cards |> Enum.split(break)
         b ++ a
     end
-    
-    # @doc """
-   #  Cut the deck of cards by tracking a specific card location through
-   #  a stack cut
-   #  """
-   #  def tech_s_cut(deck_size, break, card_loc) do
-   #      # convert the break to a positive number
-   #      break = if break < 0 do
-   #          deck_size + break
-   #      else
-   #          break
-   #      end
-   #
-   #      cond do
-   #          card_loc < break -> card_loc + (deck_size - break)
-   #          card_loc == break -> 0
-   #          card_loc > break -> card_loc - break
-   #      end
-   #  end
-    
+        
     @doc """
     Do an offset shuffle
     """
