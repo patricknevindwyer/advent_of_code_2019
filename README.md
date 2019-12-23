@@ -43,6 +43,7 @@ Solution summaries:
  * [Day 20](#day-20) - ⭐️⭐️ - Donut Maze
  * [Day 21](#day-21) - ⭐️⭐️ - Springdroid Adventure
  * [Day 22](#day-22) - ⭐️⭐️ - Slam Shuffle
+ * [Day 23](#day-23) - ⭐️⭐️ - Category Six
  
 
 Support modules:
@@ -1764,3 +1765,73 @@ The result _should_ be `87505940779834`, which can be verified in Python:
 
 The downside? Despite a _very_ easy solution for problem one (it was a trap), problem two is _unsolvable_ with standard modulo arithmatic in Elixir, despite duplication of a known working solution for running the modulo expressions (taken from [reddit](https://www.reddit.com/r/adventofcode/comments/ee0rqi/2019_day_22_solutions/fbqs5bk/)). So it goes.
 
+
+## Day 23
+
+**Problem**: [Category Six](https://adventofcode.com/2019/day/23)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day23.ex](lib/aoc/day23.ex)
+
+**Tests**: -
+
+**Hex Libraries**: -
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Intcode, Networking, Packet Switching
+
+Harkening back to the Day 07 Amplification Cirtuit, we're connecting Intcode VMs together. Instead of a loop of VM nodes, we're building a rudimentry packet switching network to move data between the input and output instructions of a 50 node Intcode network. 
+
+Most of the work for today involves adding _labeled_ input and output functions to our Intcode virtualized IO layer, so we can track where input and output requests are coming from so we can maintain node specified queues for raw data to assemble into packets, and packet data to transmit to each node. Our book-keeping functions wait for fully output packets from each VM node, and route complete packets to the
+_input_ packet queues of each node. A full half of the code for Day 23 is managing data structures and checking data state.
+
+Once our labeled IO is in place, and after a bit of book-keeping to move data between queues as it becomes
+available, we need to wait for a solution in problem one with:
+
+```elixir
+def is_end_state?({dest_addr, [x, y]}) do
+    if dest_addr == 255 do
+        IO.puts("-> @(#{dest_addr}) -- {x: #{x}, y: #{y}}")
+        true
+    else
+        false
+    end
+end
+```
+
+With that, problem one can be solved with:
+
+```elixir
+def problem01 do
+    
+    create_network_state(50)
+    |> run_network()
+    
+end
+```
+
+Problem two requires a few extra steps; routing data from our NAT, and watching for an idle network. Routing data from the NAT requires _more_ book-keeping, but we cheat a little bit. To check for an idle network, we _should_ track requests for input from each Node, and only when _every node_ has repeatedly asked for input when none exists, and all the packet queues are empty, should we trigger an idle state. **Instead** we just keep a counter of how many times we've seen completely empty packet queues - it doesn't mean every Node has requested data, but if we set a sufficiently high threshold for **idle**ness, our network converges to a repeat NAT packet injection value fairly quickly:
+
+```elixir
+iex> Aoc.Day23.problem02
+NAT repeat 20552
+NAT repeat 19669
+NAT repeat 19134
+NAT repeat 18602
+NAT repeat 18210
+NAT repeat 17619
+NAT repeat 17103
+NAT repeat 17120
+NAT repeat 16858
+NAT repeat 16753
+NAT repeat 16692
+NAT repeat 16678
+NAT repeat 16673
+NAT repeat 16662
+NAT repeat 16658
+NAT repeat 16658
+NAT repeat 16658
+NAT repeat 16658
+```
+
+Once we converge, we have our solution. It's not an optimal solution, but it does save a lot of tracking code.

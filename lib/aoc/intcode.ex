@@ -41,6 +41,18 @@ defmodule Aoc.Intcode do
                 end
                 state
             
+            # we've got a labeled input request
+            {:input, label, dest} ->
+                
+                {iv, new_state} = case input_function.(state, label) do
+                   {iv_value, updated_state} -> {iv_value, updated_state}
+                   value -> {value, state} 
+                end
+                
+                send(dest, {:input, iv})
+
+                await_io_handle(output_list, new_state, opts)
+                
             # we've got an input request
             {:input, dest} -> 
                                 
@@ -104,6 +116,7 @@ defmodule Aoc.Intcode do
         
         # use our options to build our IO functions
         input_func = opts |> Keyword.get(:input_function, &default_input/0)
+        output_func = opts |> Keyword.get(:output_function, send_output(self()))
         await_func = opts |> Keyword.get(:await_with, &await_and_collect/0)
         prog_size = opts |> Keyword.get(:memory_size, 2000)
         
@@ -115,7 +128,7 @@ defmodule Aoc.Intcode do
             initialized_program,
             state,
             [
-                output_function: send_output(self()), 
+                output_function: output_func, 
                 halt_function: send_halt(self()),
                 input_function: input_func
             ]
@@ -280,6 +293,21 @@ defmodule Aoc.Intcode do
             end
         end
     end
+    
+    @doc """
+    Request input from another pid, using a label as well as
+    our PID. Request message will look like:
+    
+        {:input, label, <PID>}
+    """
+    def send_for_labeled_input(source_pid, label) do
+        fn ->
+            send(source_pid, {:input, label, self()})
+            receive do
+                {:input, v} -> v
+            end
+        end        
+    end
    
     @doc """
     Retrieve input from our PID mailbox
@@ -310,6 +338,16 @@ defmodule Aoc.Intcode do
        end 
     end
    
+    @doc """
+    Label the output sent to a destination PID with a specific
+    label value.
+    """
+    def send_labeled_output(dest_pid, label) do
+        fn v ->
+           send(dest_pid, %{label: label, output: v}) 
+        end
+    end
+    
     @doc """
     Generate a function that will send outputs to multiple PIDs
     """
