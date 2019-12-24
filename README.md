@@ -44,6 +44,7 @@ Solution summaries:
  * [Day 21](#day-21) - ⭐️⭐️ - Springdroid Adventure
  * [Day 22](#day-22) - ⭐️⭐️ - Slam Shuffle
  * [Day 23](#day-23) - ⭐️⭐️ - Category Six
+ * [Day 24](#day-24) - ⭐️⭐️ - Planet of Discord
  
 
 Support modules:
@@ -1835,3 +1836,72 @@ NAT repeat 16658
 ```
 
 Once we converge, we have our solution. It's not an optimal solution, but it does save a lot of tracking code.
+
+
+## Day 24
+
+**Problem**: [Planet of Discord](https://adventofcode.com/2019/day/24)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day24.ex](lib/aoc/day24.ex)
+
+**Tests**: [day24_test.exs](test/aoc/day24_test.exs)
+
+**Hex Libraries**: [Chunky](https://hexdocs.pm/chunky/readme.html)
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Cellular Automata, Recursion
+
+Reading problem one, it feels like running the [Game of Life](https://en.wikipedia.org/wiki/Conway's_Game_of_Life) cellular automata is a bit... too easy. Something is amiss. Especially as we're constrained to a 5x5 grid. The rules for part one are easy enough, and the immutable
+nature of Elixir data structures means we don't step on our own feet by accident. Updating the value for an individual cell in our 5x5 grid
+is just:
+
+```elixir
+new_v = case {me, living_neighbors} do
+   {"#", 1} -> "#"
+   {"#", _} -> "."
+   {".", 2} -> "#"
+   {".", 1} -> "#"
+   {".", _} -> "."
+end
+```
+
+The biodiversity calculation is a straightforward power of two calculation, and the solution to problem one boils down to:
+
+```elixir
+def problem01 do
+   "data/day24/problem_01.cells"
+   |> find_repeating_automata()
+   |> biodiversity_rating() 
+end
+```
+
+Then the recursive shoe drops. Nested automata. The problem statement was a little vague, I didn't realize at first how the recursive grids were supposed to be added on to the grids being calculated. Basically:
+
+ - start with three grids - the starting grid, and a blank grid above and below
+ - step all grids
+ - if the top-most or bottom-most grid has any bugs, add new blank grids to the top and bottom
+
+This way the recursive grids start to add up as we go - by the end of 200 step cycles, we have 203 cellular automata grids. The book-keeping for finding neighbors in a recursive cellular automata is a bit of a pain (134 lines of code intead of 14 lines for non-recursive automata), but the step function for an indiviual cell in a grid breaks down to be almost identical:
+
+```elixir
+new_v = case {me, living_neighbors} do
+    {"?", _} -> "?"
+    {"#", 1} -> "#"
+    {"#", _} -> "."
+    {".", 2} -> "#"
+    {".", 1} -> "#"
+    {".", _} -> "."
+end
+```
+
+and problem two is solved with:
+
+```elixir
+def problem02 do
+   "data/day24/problem_01.cells"
+   |> recursive_grid_from_file()
+   |> step_recursive_automata(200)
+   |> count_bugs() 
+end
+```
