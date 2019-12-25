@@ -38,13 +38,14 @@ Solution summaries:
  * [Day 15](#day-15) - ⭐️⭐️ - Oxygen System
  * [Day 16](#day-16) - ⭐️⭐️ - Flawed Frequency Transmission
  * [Day 17](#day-17) - ⭐️⭐️ - Set and Forget
- * [Day 18](#day-18) -  - Many Worlds Interpretation
+ * [Day 18](#day-18) - ⭐️⭐️ - Many Worlds Interpretation
  * [Day 19](#day-19) - ⭐️⭐️ - Tractor Beam
  * [Day 20](#day-20) - ⭐️⭐️ - Donut Maze
  * [Day 21](#day-21) - ⭐️⭐️ - Springdroid Adventure
  * [Day 22](#day-22) - ⭐️⭐️ - Slam Shuffle
  * [Day 23](#day-23) - ⭐️⭐️ - Category Six
  * [Day 24](#day-24) - ⭐️⭐️ - Planet of Discord
+ * [Day 25](#day-25) - ⭐️⭐️ - Cryostasis
  
 
 Support modules:
@@ -1584,9 +1585,9 @@ But. It's 10:30 at night. I hand solved the move packing, as that was quicker.
 
 **Problem**: [Many Worlds Interpretation](https://adventofcode.com/2019/day/18)
 
-**Stars**: 
+**Stars**: ⭐️⭐️
 
-**Code**: [day18.ex](lib/aoc/day18.ex)
+**Code**: [day18.ex](lib/aoc/day18.ex), [day18_alt.ex](lib/aoc/day18_alt.ex)
 
 **Tests**: [day18_test.exs](test/aoc/day18_test.exs)
 
@@ -1596,6 +1597,9 @@ But. It's 10:30 at night. I hand solved the move packing, as that was quicker.
 
 Haven't yet managed to solved Day 18 - I have code using naive depth and breadth first search that works for 3/4 of the example maps, but there
 are errors in the caching and routing planning for one of the example maps and the map for problem one. We'll get back to this later.
+
+Borrowed solution from [KonradBorowski](https://gitlab.com/KonradBorowski/advent_of_code_2019/), which uses a breadth first search and route memoization via ETS. This is roughly the approach I took with my own solution, but didn't have the time or patience to debug why route
+caching wasn't working properly.
 
 
 ## Day 19
@@ -1905,3 +1909,49 @@ def problem02 do
    |> count_bugs() 
 end
 ```
+
+## Day 25
+
+**Problem**: [Cryostasis](https://adventofcode.com/2019/day/25)
+
+**Stars**: ⭐️⭐️
+
+**Code**: [day25.ex](lib/aoc/day25.ex)
+
+**Tests**: -
+
+**Hex Libraries**: -
+
+**Techniques**: [Enum/Mapping](https://hexdocs.pm/elixir/Enum.html#content), Intcode, MOO/MUD
+
+For the 25th day, it's a text based adventure:
+
+```
+                           warp drive
+                           |
+                           arcade    - hot chocolate fountain (wreath) - sick bay (photons) - gift wrap center - navigation (weather machine)
+                                       |
+                                       hull breach ------------------------- observatory (food ration) - storage (infinite loop)
+                                       |                                     |
+stables   - Holodeck (prime number)  - Hallway (giant electrom magnet)       Science Lab (molten lava) - corridor (escape pod)       Pressure Sensitive Floor - Security Checkpoint
+ (astrolabe)                           |                                     |                           |                                                      |
+                                       Passages (candy cane)                 Kitchen                     Engineering (hypercube) ------------------------------ Crew Quarters (space law space brochure)
+```
+
+After some quick naviation, and outlining the [map and items](data/day25/map.md), getting through the _Pressure Sensitive Floor_ room is
+a matter of determining the bag-of-items that has the correct weight. Two of the items can be identified as required through single item
+elimination, and then a quick permutation of the remaining items yields the solution. Solving part one is:
+
+```elixir
+def problem01 do
+    
+    create_ascii_state()
+    |> run_droid()
+    
+end
+```
+
+just a matter of running the text based adventure and having fun.
+
+
+
